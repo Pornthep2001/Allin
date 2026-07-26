@@ -768,24 +768,38 @@ let currentUserIP = 'ไม่ทราบ IP';
 let locationVerified = false;
 let ipLocation = null;
 function isAdmin(){ return currentRole === 'admin'; }
+async function reverseGeocode(lat, lon){
+  try{
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`);
+    const data = await res.json();
+    return data.display_name || null;
+  }catch(e){
+    return null;
+  }
+}
+
 async function verifyLocation(){
   const btn = document.getElementById('checkLocationBtn');
   const info = document.getElementById('ipInfo');
   if(btn){ btn.disabled = true; btn.textContent = 'กำลังตรวจสอบ...'; }
   try{
     if(navigator.geolocation){
-      const position = await new Promise((resolve, reject)=> navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy:false, timeout:15000 }));
-      const lat = position.coords.latitude.toFixed(5);
-      const lon = position.coords.longitude.toFixed(5);
-      info.textContent = `ตำแหน่งปัจจุบัน: ${lat}, ${lon}`;
+      const position = await new Promise((resolve, reject)=> navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy:true, timeout:20000, maximumAge:0 }));
+      const lat = position.coords.latitude.toFixed(6);
+      const lon = position.coords.longitude.toFixed(6);
+      const accuracy = Math.round(position.coords.accuracy || 0);
+      const address = await reverseGeocode(lat, lon);
+      const label = address ? `ตำแหน่งปัจจุบัน: ${address}` : `ตำแหน่งปัจจุบัน: ${lat}, ${lon}`;
+      info.textContent = `${label} (แม่นยำ ±${accuracy} เมตร)`;
+      currentUserIP = `${lat},${lon}`;
       locationVerified = true;
     } else {
-      await fetchUserIP();
-      locationVerified = true;
+      info.textContent = 'เบราว์เซอร์ไม่รองรับการระบุตำแหน่ง GPS';
+      locationVerified = false;
     }
   }catch(e){
-    await fetchUserIP();
-    locationVerified = true;
+    info.textContent = 'ไม่สามารถตรวจสอบตำแหน่ง GPS ได้ กรุณาเปิดสิทธิ์ตำแหน่งในเบราว์เซอร์';
+    locationVerified = false;
   }finally{
     if(btn){
       btn.textContent = locationVerified ? 'เช็คตำแหน่งแล้ว' : 'เช็คตำแหน่งปัจจุบัน';
