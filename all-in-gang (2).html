@@ -406,15 +406,11 @@
       <input type="password" id="loginPass" placeholder="Password" autocomplete="off">
     </div>
     <div class="field">
-      <label>ตำแหน่ง IP ของคุณ</label>
-      <div class="upload-box" id="ipInfo">กำลังตรวจสอบตำแหน่ง IP...</div>
+      <label>ตำแหน่งปัจจุบัน</label>
+      <div class="upload-box" id="ipInfo">กดปุ่มด้านล่างเพื่อตรวจสอบตำแหน่ง</div>
     </div>
-    <div class="field" style="display:flex;align-items:center;gap:8px;">
-      <input type="checkbox" id="ipConfirm" onchange="updateIpConfirm()">
-      <label for="ipConfirm" style="margin:0;cursor:pointer;">ยืนยันตำแหน่ง IP นี้ก่อนเข้าสู่ระบบ</label>
-    </div>
+    <button class="ghost" id="checkLocationBtn" onclick="verifyLocation()">เช็คตำแหน่งปัจจุบัน</button>
     <button class="primary" onclick="tryLogin()">เข้าสู่ระบบ</button>
-    <div class="login-error" id="loginError"></div>
     <div class="login-error" id="loginError"></div>
   </div>
 </div>
@@ -769,11 +765,33 @@ const SESSION_KEY = 'allin-session';
 
 let currentRole = null; // 'admin' | 'member'
 let currentUserIP = 'ไม่ทราบ IP';
-let ipConfirmed = false;
+let locationVerified = false;
 let ipLocation = null;
 function isAdmin(){ return currentRole === 'admin'; }
-function updateIpConfirm(){
-  ipConfirmed = document.getElementById('ipConfirm').checked;
+async function verifyLocation(){
+  const btn = document.getElementById('checkLocationBtn');
+  const info = document.getElementById('ipInfo');
+  if(btn){ btn.disabled = true; btn.textContent = 'กำลังตรวจสอบ...'; }
+  try{
+    if(navigator.geolocation){
+      const position = await new Promise((resolve, reject)=> navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy:false, timeout:15000 }));
+      const lat = position.coords.latitude.toFixed(5);
+      const lon = position.coords.longitude.toFixed(5);
+      info.textContent = `ตำแหน่งปัจจุบัน: ${lat}, ${lon}`;
+      locationVerified = true;
+    } else {
+      await fetchUserIP();
+      locationVerified = true;
+    }
+  }catch(e){
+    await fetchUserIP();
+    locationVerified = true;
+  }finally{
+    if(btn){
+      btn.textContent = locationVerified ? 'เช็คตำแหน่งแล้ว' : 'เช็คตำแหน่งปัจจุบัน';
+      btn.disabled = locationVerified;
+    }
+  }
 }
 
 function saveSession(){
@@ -833,8 +851,8 @@ async function tryLogin(){
     err.textContent = 'รหัสไม่ถูกต้อง ลองใหม่อีกครั้ง';
     return;
   }
-  if(!ipConfirmed){
-    err.textContent = 'กรุณายืนยันตำแหน่ง IP ก่อนเข้าสู่ระบบ';
+  if(!locationVerified){
+    err.textContent = 'กรุณาเช็คตำแหน่งปัจจุบันก่อนเข้าสู่ระบบ';
     return;
   }
   saveSession();
@@ -853,14 +871,15 @@ async function logout(){
   clearSession();
   currentRole = null;
   currentUserIP = 'ไม่ทราบ IP';
-  ipConfirmed = false;
+  locationVerified = false;
   document.getElementById('appRoot').style.display = 'none';
   document.getElementById('loginGate').style.display = 'flex';
   document.getElementById('loginUser').value = '';
   document.getElementById('loginPass').value = '';
   document.getElementById('loginError').textContent = '';
-  const ipConfirm = document.getElementById('ipConfirm');
-  if(ipConfirm) ipConfirm.checked = false;
+  document.getElementById('ipInfo').textContent = 'กดปุ่มด้านล่างเพื่อตรวจสอบตำแหน่ง';
+  const btn = document.getElementById('checkLocationBtn');
+  if(btn){ btn.disabled = false; btn.textContent = 'เช็คตำแหน่งปัจจุบัน'; }
   document.body.classList.remove('role-member');
 }
 
@@ -878,7 +897,6 @@ document.getElementById('loginPass').addEventListener('keydown', (e)=>{
 });
 
 window.addEventListener('DOMContentLoaded', async ()=>{
-  await fetchUserIP();
   if(restoreSession()){
     document.getElementById('loginGate').style.display = 'none';
     document.getElementById('appRoot').style.display = 'block';
