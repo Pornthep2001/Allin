@@ -405,7 +405,16 @@
       <label>Password</label>
       <input type="password" id="loginPass" placeholder="Password" autocomplete="off">
     </div>
+    <div class="field">
+      <label>ตำแหน่ง IP ของคุณ</label>
+      <div class="upload-box" id="ipInfo">กำลังตรวจสอบตำแหน่ง IP...</div>
+    </div>
+    <div class="field" style="display:flex;align-items:center;gap:8px;">
+      <input type="checkbox" id="ipConfirm" onchange="updateIpConfirm()">
+      <label for="ipConfirm" style="margin:0;cursor:pointer;">ยืนยันตำแหน่ง IP นี้ก่อนเข้าสู่ระบบ</label>
+    </div>
     <button class="primary" onclick="tryLogin()">เข้าสู่ระบบ</button>
+    <div class="login-error" id="loginError"></div>
     <div class="login-error" id="loginError"></div>
   </div>
 </div>
@@ -760,7 +769,12 @@ const SESSION_KEY = 'allin-session';
 
 let currentRole = null; // 'admin' | 'member'
 let currentUserIP = 'ไม่ทราบ IP';
+let ipConfirmed = false;
+let ipLocation = null;
 function isAdmin(){ return currentRole === 'admin'; }
+function updateIpConfirm(){
+  ipConfirmed = document.getElementById('ipConfirm').checked;
+}
 
 function saveSession(){
   try{
@@ -793,11 +807,16 @@ async function sha256Hex(text){
 
 async function fetchUserIP(){
   try{
-    const res = await fetch('https://api.ipify.org?format=json');
+    const res = await fetch('https://ipapi.co/json/');
     const data = await res.json();
     currentUserIP = data.ip || 'ไม่ทราบ IP';
+    ipLocation = data;
+    const locationText = `${currentUserIP} · ${data.city || 'ไม่ทราบเมือง'}, ${data.region || 'ไม่ทราบจังหวัด'}, ${data.country_name || 'ไม่ทราบประเทศ'}`;
+    document.getElementById('ipInfo').textContent = locationText;
   }catch(e){
     currentUserIP = 'ไม่ทราบ IP';
+    ipLocation = null;
+    document.getElementById('ipInfo').textContent = 'ไม่สามารถตรวจสอบตำแหน่ง IP ได้';
   }
 }
 
@@ -812,6 +831,10 @@ async function tryLogin(){
     currentRole = 'member';
   } else {
     err.textContent = 'รหัสไม่ถูกต้อง ลองใหม่อีกครั้ง';
+    return;
+  }
+  if(!ipConfirmed){
+    err.textContent = 'กรุณายืนยันตำแหน่ง IP ก่อนเข้าสู่ระบบ';
     return;
   }
   saveSession();
@@ -830,11 +853,14 @@ async function logout(){
   clearSession();
   currentRole = null;
   currentUserIP = 'ไม่ทราบ IP';
+  ipConfirmed = false;
   document.getElementById('appRoot').style.display = 'none';
   document.getElementById('loginGate').style.display = 'flex';
   document.getElementById('loginUser').value = '';
   document.getElementById('loginPass').value = '';
   document.getElementById('loginError').textContent = '';
+  const ipConfirm = document.getElementById('ipConfirm');
+  if(ipConfirm) ipConfirm.checked = false;
   document.body.classList.remove('role-member');
 }
 
@@ -846,16 +872,17 @@ function applyRoleUI(){
     badge.classList.toggle('admin', currentRole === 'admin');
   }
 }
+
 document.getElementById('loginPass').addEventListener('keydown', (e)=>{
   if(e.key === 'Enter') tryLogin();
 });
 
 window.addEventListener('DOMContentLoaded', async ()=>{
+  await fetchUserIP();
   if(restoreSession()){
     document.getElementById('loginGate').style.display = 'none';
     document.getElementById('appRoot').style.display = 'block';
     applyRoleUI();
-    await fetchUserIP();
     await loadAll();
     showAnnouncementPopup();
   }
