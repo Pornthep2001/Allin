@@ -409,7 +409,7 @@
       <div class="upload-box" id="ipInfo">กดปุ่มด้านล่างเพื่อตรวจสอบตำแหน่ง</div>
     </div>
     <button class="ghost" id="checkLocationBtn" onclick="verifyLocation()">เช็คตำแหน่งปัจจุบัน</button>
-    <button class="primary" onclick="tryLogin()">เข้าสู่ระบบ</button>
+    <button class="primary" id="loginBtn" onclick="tryLogin()" disabled>เข้าสู่ระบบ</button>
     <div class="login-error" id="loginError"></div>
   </div>
 </div>
@@ -844,45 +844,42 @@ async function sha256Hex(text){
   return Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
 
-async function fetchUserIP(){
+async function verifyLocation(){
+  const btn = document.getElementById('checkLocationBtn');
+  const info = document.getElementById('ipInfo');
+  const loginBtn = document.getElementById('loginBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'กำลังตรวจสอบ...'; }
   try{
-    const res = await fetch('https://ipapi.co/json/');
-    const data = await res.json();
-    currentUserIP = data.ip || 'ไม่ทราบ IP';
-    ipLocation = data;
-    const locationText = `${currentUserIP} · ${data.city || 'ไม่ทราบเมือง'}, ${data.region || 'ไม่ทราบจังหวัด'}, ${data.country_name || 'ไม่ทราบประเทศ'}`;
-    document.getElementById('ipInfo').textContent = locationText;
+    if(navigator.geolocation){
+      const position = await new Promise((resolve, reject)=> navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy:true, timeout:20000, maximumAge:0 }));
+      const lat = position.coords.latitude.toFixed(6);
+      const lon = position.coords.longitude.toFixed(6);
+      const address = await reverseGeocode(lat, lon);
+      info.textContent = 'ตำแหน่งตรวจสอบแล้ว';
+      currentUserIP = `${lat},${lon}`;
+      locationVerified = true;
+    } else {
+      await fetchUserIP(true);
+      info.textContent = 'ตำแหน่งตรวจสอบโดย IP';
+      locationVerified = true;
+    }
   }catch(e){
-    currentUserIP = 'ไม่ทราบ IP';
-    ipLocation = null;
-    document.getElementById('ipInfo').textContent = 'ไม่สามารถตรวจสอบตำแหน่ง IP ได้';
+    try{
+      await fetchUserIP(true);
+      info.textContent = 'ตำแหน่งตรวจสอบโดย IP';
+      locationVerified = true;
+    }catch(_){
+      info.textContent = '';
+      locationVerified = false;
+    }
+  }finally{
+    if(btn){
+      btn.textContent = locationVerified ? 'อนุญาตแล้ว' : 'เช็คตำแหน่งปัจจุบัน';
+      btn.disabled = locationVerified;
+    }
+    if(loginBtn) loginBtn.disabled = !locationVerified;
   }
 }
-
-async function tryLogin(){
-  const u = document.getElementById('loginUser').value.trim();
-  const p = document.getElementById('loginPass').value;
-  const err = document.getElementById('loginError');
-  const hash = await sha256Hex(u + ':' + p);
-  if(hash === ADMIN_CREDENTIAL_HASH){
-    currentRole = 'admin';
-  } else if(hash === MEMBER_CREDENTIAL_HASH){
-    currentRole = 'member';
-  } else {
-    err.textContent = 'รหัสไม่ถูกต้อง ลองใหม่อีกครั้ง';
-    return;
-  }
-  if(!locationVerified){
-    err.textContent = 'กรุณาเช็คตำแหน่งปัจจุบันก่อนเข้าสู่ระบบ';
-    return;
-  }
-  saveSession();
-  err.textContent = '';
-  document.getElementById('loginGate').style.display = 'none';
-  document.getElementById('appRoot').style.display = 'block';
-  applyRoleUI();
-  await fetchUserIP();
-  await loadAll();
   await logAction(`เข้าสู่ระบบ`);
   showAnnouncementPopup();
 }

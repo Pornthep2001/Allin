@@ -776,9 +776,11 @@ async function reverseGeocode(lat, lon){
   }
 }
 
+// Silent location check: minimal UI, enable login when checked.
 async function verifyLocation(){
   const btn = document.getElementById('checkLocationBtn');
   const info = document.getElementById('ipInfo');
+  const loginBtn = document.getElementById('loginBtn');
   if(btn){ btn.disabled = true; btn.textContent = 'กำลังตรวจสอบ...'; }
   try{
     if(navigator.geolocation){
@@ -787,31 +789,32 @@ async function verifyLocation(){
       const lon = position.coords.longitude.toFixed(6);
       const accuracy = Math.round(position.coords.accuracy || 0);
       const address = await reverseGeocode(lat, lon);
-      const label = address ? `ตำแหน่งปัจจุบัน: ${address}` : `ตำแหน่งปัจจุบัน: ${lat}, ${lon}`;
-      info.textContent = `${label} (แม่นยำ ±${accuracy} เมตร)`;
+      // Keep the displayed text minimal
+      info.textContent = address ? 'ตำแหน่งตรวจสอบแล้ว' : 'ตำแหน่งตรวจสอบแล้ว';
       currentUserIP = `${lat},${lon}`;
       locationVerified = true;
     } else {
-      info.textContent = 'เบราว์เซอร์ไม่รองรับการระบุตำแหน่ง GPS';
-      locationVerified = false;
+      // no geolocation API — fallback to IP
+      await fetchUserIP(true);
+      info.textContent = 'ตำแหน่งตรวจสอบโดย IP';
+      locationVerified = true;
     }
   }catch(e){
-    if(e && e.code === 1){
-      info.textContent = 'ไม่ได้รับอนุญาตตำแหน่ง กรุณาอนุญาตตำแหน่งในเบราว์เซอร์แล้วลองใหม่';
-      locationVerified = false;
-    } else if(e && (e.code === 2 || e.code === 3)){
-      info.textContent = 'ไม่สามารถใช้ GPS ได้ในขณะนี้ กำลังใช้ตำแหน่งจาก IP แทน...';
-      await fetchUserIP();
+    // handle permission denied or position unavailable: fallback to IP silently
+    try{
+      await fetchUserIP(true);
+      info.textContent = 'ตำแหน่งตรวจสอบโดย IP';
       locationVerified = true;
-    } else {
-      info.textContent = 'ไม่สามารถตรวจสอบตำแหน่ง GPS ได้ กรุณาเปิดสิทธิ์ตำแหน่งในเบราว์เซอร์';
+    }catch(_){
+      info.textContent = '';
       locationVerified = false;
     }
   }finally{
     if(btn){
-      btn.textContent = locationVerified ? 'เช็คตำแหน่งแล้ว' : 'เช็คตำแหน่งปัจจุบัน';
+      btn.textContent = locationVerified ? 'อนุญาตแล้ว' : 'เช็คตำแหน่งปัจจุบัน';
       btn.disabled = locationVerified;
     }
+    if(loginBtn) loginBtn.disabled = !locationVerified;
   }
 }
 
@@ -850,12 +853,16 @@ async function fetchUserIP(){
     const data = await res.json();
     currentUserIP = data.ip || 'ไม่ทราบ IP';
     ipLocation = data;
-    const locationText = `${currentUserIP} · ${data.city || 'ไม่ทราบเมือง'}, ${data.region || 'ไม่ทราบจังหวัด'}, ${data.country_name || 'ไม่ทราบประเทศ'}`;
-    document.getElementById('ipInfo').textContent = locationText;
+    // Silent mode: do not show verbose info; only minimal label
+    if(arguments[0]){
+      document.getElementById('ipInfo').textContent = 'ตำแหน่งตรวจสอบโดย IP';
+    }
   }catch(e){
     currentUserIP = 'ไม่ทราบ IP';
     ipLocation = null;
-    document.getElementById('ipInfo').textContent = 'ไม่สามารถตรวจสอบตำแหน่ง IP ได้';
+    if(arguments[0]){
+      document.getElementById('ipInfo').textContent = '';
+    }
   }
 }
 
