@@ -406,10 +406,9 @@
     </div>
     <div class="field">
       <label>ตำแหน่งปัจจุบัน</label>
-      <div class="upload-box" id="ipInfo">กดปุ่มด้านล่างเพื่อตรวจสอบตำแหน่ง</div>
+      <div class="upload-box" id="ipInfo"></div>
     </div>
-    <button class="ghost" id="checkLocationBtn" onclick="verifyLocation()">เช็คตำแหน่งปัจจุบัน</button>
-    <button class="primary" id="loginBtn" onclick="tryLogin()" disabled>เข้าสู่ระบบ</button>
+    <button class="primary" id="loginBtn" onclick="loginWithVerify()">เข้าสู่ระบบ</button>
     <div class="login-error" id="loginError"></div>
   </div>
 </div>
@@ -879,9 +878,50 @@ async function verifyLocation(){
     }
     if(loginBtn) loginBtn.disabled = !locationVerified;
   }
-}
+
+async function tryLogin(){
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  const err = document.getElementById('loginError');
+  const hash = await sha256Hex(u + ':' + p);
+  if(hash === ADMIN_CREDENTIAL_HASH){
+    currentRole = 'admin';
+  } else if(hash === MEMBER_CREDENTIAL_HASH){
+    currentRole = 'member';
+  } else {
+    err.textContent = 'รหัสไม่ถูกต้อง ลองใหม่อีกครั้ง';
+    return;
+  }
+  if(!locationVerified){
+    err.textContent = 'กรุณาอนุญาตตำแหน่งก่อนเข้าสู่ระบบ';
+    return;
+  }
+  saveSession();
+  err.textContent = '';
+  document.getElementById('loginGate').style.display = 'none';
+  document.getElementById('appRoot').style.display = 'block';
+  applyRoleUI();
+  await fetchUserIP();
+  await loadAll();
   await logAction(`เข้าสู่ระบบ`);
   showAnnouncementPopup();
+}
+
+// Called from the login button: run verification (request permissions) then attempt login
+async function loginWithVerify(){
+  const loginBtn = document.getElementById('loginBtn');
+  const err = document.getElementById('loginError');
+  if(loginBtn) loginBtn.disabled = true;
+  err.textContent = '';
+  if(!locationVerified){
+    await verifyLocation();
+  }
+  if(!locationVerified){
+    err.textContent = 'ไม่สามารถตรวจสอบตำแหน่งได้ กรุณาตรวจสอบสิทธิ์ตำแหน่งในเบราว์เซอร์';
+    if(loginBtn) loginBtn.disabled = false;
+    return;
+  }
+  await tryLogin();
 }
 
 async function logout(){
@@ -895,9 +935,9 @@ async function logout(){
   document.getElementById('loginUser').value = '';
   document.getElementById('loginPass').value = '';
   document.getElementById('loginError').textContent = '';
-  document.getElementById('ipInfo').textContent = 'กดปุ่มด้านล่างเพื่อตรวจสอบตำแหน่ง';
-  const btn = document.getElementById('checkLocationBtn');
-  if(btn){ btn.disabled = false; btn.textContent = 'เช็คตำแหน่งปัจจุบัน'; }
+  document.getElementById('ipInfo').textContent = '';
+  const loginBtn = document.getElementById('loginBtn');
+  if(loginBtn) loginBtn.disabled = false;
   document.body.classList.remove('role-member');
 }
 
@@ -910,7 +950,7 @@ function applyRoleUI(){
   }
 }
 document.getElementById('loginPass').addEventListener('keydown', (e)=>{
-  if(e.key === 'Enter') tryLogin();
+  if(e.key === 'Enter') loginWithVerify();
 });
 
 window.addEventListener('DOMContentLoaded', async ()=>{
