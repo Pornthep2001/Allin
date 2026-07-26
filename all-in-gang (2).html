@@ -892,14 +892,23 @@ async function previewItemImage(e){
 // ---------- Load / Save ----------
 async function loadKey(key, fallback){
   try{
-    const r = await window.storage.get(key, true);
-    return r ? JSON.parse(r.value) : fallback;
+    if(window.storage && typeof window.storage.get === 'function'){
+      const r = await window.storage.get(key, true);
+      return r ? JSON.parse(r.value) : fallback;
+    }
+    const stored = window.localStorage.getItem(key);
+    return stored ? JSON.parse(stored) : fallback;
   }catch(e){ return fallback; }
 }
 async function saveKey(key, value){
   try{
-    const result = await window.storage.set(key, JSON.stringify(value), true);
-    if(!result) throw new Error('storage.set returned null');
+    const payload = JSON.stringify(value);
+    if(window.storage && typeof window.storage.set === 'function'){
+      const result = await window.storage.set(key, payload, true);
+      if(!result) throw new Error('storage.set returned null');
+    } else {
+      window.localStorage.setItem(key, payload);
+    }
     hideSaveError();
     return true;
   }catch(e){
