@@ -1674,12 +1674,16 @@ async function addDelivery(){
   if(!qty || qty<=0){ alert('กรอกจำนวนให้ถูกต้อง'); return; }
   if(!receiverId){ alert('เลือกชื่อผู้รับ'); return; }
   if(!note){ alert('กรอกหมายเหตุ/ที่อยู่'); return; }
+  const it = inventory.find(x=>x.id===itemId);
   deliveryRecords.push({ id: uid(), itemId, qty, receiverId, status, note, date: nowStr(), ts: Date.now() });
+  if(it){ it.qty += qty; }
   document.getElementById('dvQty').value='1';
   document.getElementById('dvNote').value='';
   renderDelivery();
+  renderItems();
   await saveKey(KEYS.delivery, deliveryRecords);
-  await logAction(`บันทึกส่งของ: ${itemName(itemId)} x${qty} ไปยัง ${members.find(m=>m.id===receiverId)?.name||'?'}`);
+  await saveKey(KEYS.items, inventory);
+  await logAction(`ส่งของเข้าคลัง: ${itemName(itemId)} x${qty} (โดย ${members.find(m=>m.id===receiverId)?.name||'?'})`);
 }
 
 async function markDeliveryReceived(id){
@@ -1693,9 +1697,15 @@ async function markDeliveryReceived(id){
 async function deleteDelivery(id){
   if(!isAdmin()){ alert('บัญชีนี้ไม่มีสิทธิ์ลบรายการส่ง'); return; }
   const d = deliveryRecords.find(r=>r.id===id);
+  if(d){
+    const it = inventory.find(x=>x.id===d.itemId);
+    if(it) it.qty = Math.max(0, it.qty - d.qty);
+  }
   deliveryRecords = deliveryRecords.filter(r=>r.id!==id);
   renderDelivery();
+  renderItems();
   await saveKey(KEYS.delivery, deliveryRecords);
+  await saveKey(KEYS.items, inventory);
   await logAction(`ลบรายการส่ง: ${d ? itemName(d.itemId)+' x'+d.qty : id}`);
 }
 
