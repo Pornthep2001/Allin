@@ -749,17 +749,41 @@ let pendingMemberImage = null;
 let pendingItemImage = null;
 
 // ---------- Login gate ----------
-// Session-only: valid while this tab stays open. Leaving or reloading the
-// site requires entering the code again (nothing is stored on disk).
+// Session state is persisted in localStorage so a logged-in user can
+// refresh the page without having to log in again.
 // Credentials are never kept as plain text in the code — only a SHA-256
 // hash of "username:password" is stored, and the typed input is hashed
 // the same way before comparing.
 const ADMIN_CREDENTIAL_HASH = '83bc105cc0e13494f3cc0bf2b48d0877f04800576eb6e36accd5b98e213c4486'; // full access
 const MEMBER_CREDENTIAL_HASH = '0a4fa4bbbe82f07cfaba8737c1863ed453d20fafe3b9bda875aef3e76fc0f428'; // view + borrow/withdraw only
+const SESSION_KEY = 'allin-session';
 
 let currentRole = null; // 'admin' | 'member'
 let currentUserIP = 'ไม่ทราบ IP';
 function isAdmin(){ return currentRole === 'admin'; }
+
+function saveSession(){
+  try{
+    window.localStorage.setItem(SESSION_KEY, JSON.stringify({ role: currentRole }));
+  }catch(e){ console.warn('saveSession failed', e); }
+}
+
+function clearSession(){
+  try{ window.localStorage.removeItem(SESSION_KEY); }catch(e){ }
+}
+
+function restoreSession(){
+  try{
+    const data = window.localStorage.getItem(SESSION_KEY);
+    if(!data) return false;
+    const session = JSON.parse(data);
+    if(session && (session.role === 'admin' || session.role === 'member')){
+      currentRole = session.role;
+      return true;
+    }
+  }catch(e){ }
+  return false;
+}
 
 async function sha256Hex(text){
   const data = new TextEncoder().encode(text);
@@ -790,6 +814,7 @@ async function tryLogin(){
     err.textContent = 'รหัสไม่ถูกต้อง ลองใหม่อีกครั้ง';
     return;
   }
+  saveSession();
   err.textContent = '';
   document.getElementById('loginGate').style.display = 'none';
   document.getElementById('appRoot').style.display = 'block';
@@ -802,6 +827,7 @@ async function tryLogin(){
 
 async function logout(){
   if(currentRole){ await logAction('ออกจากระบบ'); }
+  clearSession();
   currentRole = null;
   currentUserIP = 'ไม่ทราบ IP';
   document.getElementById('appRoot').style.display = 'none';
@@ -822,6 +848,17 @@ function applyRoleUI(){
 }
 document.getElementById('loginPass').addEventListener('keydown', (e)=>{
   if(e.key === 'Enter') tryLogin();
+});
+
+window.addEventListener('DOMContentLoaded', async ()=>{
+  if(restoreSession()){
+    document.getElementById('loginGate').style.display = 'none';
+    document.getElementById('appRoot').style.display = 'block';
+    applyRoleUI();
+    await fetchUserIP();
+    await loadAll();
+    showAnnouncementPopup();
+  }
 });
 
 // ---------- Tabs ----------
