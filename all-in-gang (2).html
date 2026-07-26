@@ -406,10 +406,9 @@
     </div>
     <div class="field">
       <label>ตำแหน่งปัจจุบัน</label>
-      <div class="upload-box" id="ipInfo">กดปุ่มด้านล่างเพื่อตรวจสอบตำแหน่ง</div>
+      <div class="upload-box" id="ipInfo"></div>
     </div>
-    <button class="ghost" id="checkLocationBtn" onclick="verifyLocation()">เช็คตำแหน่งปัจจุบัน</button>
-    <button class="primary" onclick="tryLogin()">เข้าสู่ระบบ</button>
+    <button class="primary" id="loginBtn" onclick="loginWithVerify()">เข้าสู่ระบบ</button>
     <div class="login-error" id="loginError"></div>
   </div>
 </div>
@@ -880,7 +879,7 @@ async function tryLogin(){
     return;
   }
   if(!locationVerified){
-    err.textContent = 'กรุณาเช็คตำแหน่งปัจจุบันก่อนเข้าสู่ระบบ';
+    err.textContent = 'กรุณาอนุญาตตำแหน่งก่อนเข้าสู่ระบบ';
     return;
   }
   saveSession();
@@ -892,6 +891,24 @@ async function tryLogin(){
   await loadAll();
   await logAction(`เข้าสู่ระบบ`);
   showAnnouncementPopup();
+}
+
+// Called from the login button: run verification (request permissions) then attempt login
+async function loginWithVerify(){
+  const loginBtn = document.getElementById('loginBtn');
+  const err = document.getElementById('loginError');
+  if(loginBtn) loginBtn.disabled = true;
+  err.textContent = '';
+  if(!locationVerified){
+    await verifyLocation();
+  }
+  if(!locationVerified){
+    err.textContent = 'ไม่สามารถตรวจสอบตำแหน่งได้ กรุณาตรวจสอบสิทธิ์ตำแหน่งในเบราว์เซอร์';
+    if(loginBtn) loginBtn.disabled = false;
+    return;
+  }
+  // proceed to normal login flow
+  await tryLogin();
 }
 
 async function logout(){
@@ -906,8 +923,9 @@ async function logout(){
   document.getElementById('loginPass').value = '';
   document.getElementById('loginError').textContent = '';
   document.getElementById('ipInfo').textContent = 'กดปุ่มด้านล่างเพื่อตรวจสอบตำแหน่ง';
-  const btn = document.getElementById('checkLocationBtn');
-  if(btn){ btn.disabled = false; btn.textContent = 'เช็คตำแหน่งปัจจุบัน'; }
+  document.getElementById('ipInfo').textContent = '';
+  const loginBtn = document.getElementById('loginBtn');
+  if(loginBtn) loginBtn.disabled = false;
   document.body.classList.remove('role-member');
 }
 
@@ -921,7 +939,7 @@ function applyRoleUI(){
 }
 
 document.getElementById('loginPass').addEventListener('keydown', (e)=>{
-  if(e.key === 'Enter') tryLogin();
+  if(e.key === 'Enter') loginWithVerify();
 });
 
 window.addEventListener('DOMContentLoaded', async ()=>{
