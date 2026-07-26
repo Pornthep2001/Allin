@@ -775,45 +775,6 @@ async function reverseGeocode(lat, lon){
   }
 }
 
-async function verifyLocation(){
-  const btn = document.getElementById('checkLocationBtn');
-  const info = document.getElementById('ipInfo');
-  if(btn){ btn.disabled = true; btn.textContent = 'กำลังตรวจสอบ...'; }
-  try{
-    if(navigator.geolocation){
-      const position = await new Promise((resolve, reject)=> navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy:true, timeout:20000, maximumAge:0 }));
-      const lat = position.coords.latitude.toFixed(6);
-      const lon = position.coords.longitude.toFixed(6);
-      const accuracy = Math.round(position.coords.accuracy || 0);
-      const address = await reverseGeocode(lat, lon);
-      const label = address ? `ตำแหน่งปัจจุบัน: ${address}` : `ตำแหน่งปัจจุบัน: ${lat}, ${lon}`;
-      info.textContent = `${label} (แม่นยำ ±${accuracy} เมตร)`;
-      currentUserIP = `${lat},${lon}`;
-      locationVerified = true;
-    } else {
-      info.textContent = 'เบราว์เซอร์ไม่รองรับการระบุตำแหน่ง GPS';
-      locationVerified = false;
-    }
-  }catch(e){
-    if(e && e.code === 1){
-      info.textContent = 'ไม่ได้รับอนุญาตตำแหน่ง กรุณาอนุญาตตำแหน่งในเบราว์เซอร์แล้วลองใหม่';
-      locationVerified = false;
-    } else if(e && (e.code === 2 || e.code === 3)){
-      info.textContent = 'ไม่สามารถใช้ GPS ได้ในขณะนี้ กำลังใช้ตำแหน่งจาก IP แทน...';
-      await fetchUserIP();
-      locationVerified = true;
-    } else {
-      info.textContent = 'ไม่สามารถตรวจสอบตำแหน่ง GPS ได้ กรุณาเปิดสิทธิ์ตำแหน่งในเบราว์เซอร์';
-      locationVerified = false;
-    }
-  }finally{
-    if(btn){
-      btn.textContent = locationVerified ? 'เช็คตำแหน่งแล้ว' : 'เช็คตำแหน่งปัจจุบัน';
-      btn.disabled = locationVerified;
-    }
-  }
-}
-
 function saveSession(){
   try{
     window.localStorage.setItem(SESSION_KEY, JSON.stringify({ role: currentRole }));
@@ -1033,8 +994,13 @@ async function previewItemImage(e){
 async function loadKey(key, fallback){
   try{
     if(window.storage && typeof window.storage.get === 'function'){
-      const r = await window.storage.get(key, true);
-      return r ? JSON.parse(r.value) : fallback;
+      try{
+        const r = await window.storage.get(key, true);
+        if(r){
+          if(typeof r.value === 'string') return JSON.parse(r.value);
+          if(typeof r === 'string') return JSON.parse(r);
+        }
+      }catch(e){ /* ignore and fallback to localStorage */ }
     }
     const stored = window.localStorage.getItem(key);
     return stored ? JSON.parse(stored) : fallback;
@@ -1044,11 +1010,17 @@ async function saveKey(key, value){
   try{
     const payload = JSON.stringify(value);
     if(window.storage && typeof window.storage.set === 'function'){
-      const result = await window.storage.set(key, payload, true);
-      if(!result) throw new Error('storage.set returned null');
-    } else {
-      window.localStorage.setItem(key, payload);
+      try{
+        const result = await window.storage.set(key, payload, true);
+        if(result){
+          hideSaveError();
+          return true;
+        }
+      }catch(e){
+        /* ignore and fallback to localStorage */
+      }
     }
+    window.localStorage.setItem(key, payload);
     hideSaveError();
     return true;
   }catch(e){

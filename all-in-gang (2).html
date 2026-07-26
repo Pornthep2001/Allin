@@ -1021,8 +1021,13 @@ async function previewItemImage(e){
 async function loadKey(key, fallback){
   try{
     if(window.storage && typeof window.storage.get === 'function'){
-      const r = await window.storage.get(key, true);
-      return r ? JSON.parse(r.value) : fallback;
+      try{
+        const r = await window.storage.get(key, true);
+        if(r){
+          if(typeof r.value === 'string') return JSON.parse(r.value);
+          if(typeof r === 'string') return JSON.parse(r);
+        }
+      }catch(e){ /* ignore and fallback to localStorage */ }
     }
     const stored = window.localStorage.getItem(key);
     return stored ? JSON.parse(stored) : fallback;
@@ -1032,11 +1037,17 @@ async function saveKey(key, value){
   try{
     const payload = JSON.stringify(value);
     if(window.storage && typeof window.storage.set === 'function'){
-      const result = await window.storage.set(key, payload, true);
-      if(!result) throw new Error('storage.set returned null');
-    } else {
-      window.localStorage.setItem(key, payload);
+      try{
+        const result = await window.storage.set(key, payload, true);
+        if(result){
+          hideSaveError();
+          return true;
+        }
+      }catch(e){
+        /* ignore and fallback to localStorage */
+      }
     }
+    window.localStorage.setItem(key, payload);
     hideSaveError();
     return true;
   }catch(e){
