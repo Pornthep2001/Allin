@@ -709,46 +709,46 @@
     </div>
   </section>
 
-  <!-- ===== DELIVERY TAB ===== -->
+    <!-- ===== DELIVERY TAB ===== -->
   <section class="panel" id="panel-delivery">
     <div class="card">
-      <h2>บันทึกส่งของแก๊งค์ <span class="eyebrow">Delivery</span></h2>
+      <h2>บันทึกส่งของเข้าแก๊งค์ <span class="eyebrow">Incoming Delivery</span></h2>
       <div class="form-grid">
         <div class="field">
-          <label>ชื่อของ</label>
+          <label>ชื่อของ / ไอเทม</label>
           <select id="dvItem"><option value="">— เลือกของในคลัง —</option></select>
         </div>
         <div class="field">
-          <label>จำนวนส่ง</label>
+          <label>จำนวนที่ส่งเข้า</label>
           <input type="number" id="dvQty" placeholder="1" min="1" value="1">
         </div>
         <div class="field">
-          <label>ชื่อผู้รับ</label>
-          <select id="dvReceiver"><option value="">— เลือกสมาชิก —</option></select>
+          <label>ชื่อสมาชิกที่ส่ง</label>
+          <select id="dvSender"><option value="">— เลือกสมาชิก —</option></select>
         </div>
         <div class="field">
           <label>สถานะ</label>
           <select id="dvStatus">
-            <option value="pending">⏳ รอการจัดส่ง</option>
-            <option value="sent">✈️ ส่งแล้ว</option>
-            <option value="received">✅ ได้รับ</option>
+            <option value="pending">⏳ กำลังดำเนินการ / รอเช็ค</option>
+            <option value="received" selected>✅ ตรวจรับเข้าคลังแล้ว</option>
           </select>
         </div>
       </div>
       <div class="form-grid full" style="margin-top:12px;">
         <div class="field">
-          <label>หมายเหตุ / ที่อยู่</label>
-          <textarea id="dvNote" placeholder="ที่อยู่ผู้รับ หรือหมายเหตุเพิ่มเติม" style="min-height:50px;"></textarea>
+          <label>หมายเหตุ</label>
+          <textarea id="dvNote" placeholder="รายละเอียดการส่ง หรือหมายเหตุเพิ่มเติม" style="min-height:50px;"></textarea>
         </div>
       </div>
       <div class="actions">
-        <button class="primary" onclick="addDelivery()">บันทึกการส่ง</button>
+        <button class="primary" onclick="addDelivery()">บันทึกการส่งเข้า</button>
       </div>
+      <div class="hint">ใช้สำหรับบันทึกเมื่อสมาชิกนำของมาส่งให้แก๊งค์ จำนวนของในคลังจะเพิ่มขึ้นโดยอัตโนมัติ</div>
       <div class="hint warn" id="deliveryHint" style="display:none;"></div>
     </div>
 
     <div class="card">
-      <h2>รายการส่งของ <span class="count-badge" id="deliveryCount">0 รายการ</span></h2>
+      <h2>ประวัติการส่งของเข้าแก๊งค์ <span class="count-badge" id="deliveryCount">0 รายการ</span></h2>
       <div class="list" id="deliveryList"></div>
     </div>
   </section>
@@ -1474,7 +1474,8 @@ function itemCardHtml(it){
 }
 
 function renderItems(){
-  document.getElementById('itemCount').textContent = inventory.length + ' ชิ้น';
+  const totalQty = inventory.reduce((sum, it) => sum + (it.qty || 0), 0);
+  document.getElementById('itemCount').textContent = totalQty + ' ชิ้น (' + inventory.length + ' ชนิด)';
   const grid = document.getElementById('itemGrid');
   if(inventory.length===0){
     grid.innerHTML = '<div class="empty"><span class="icon">🎒</span>ยังไม่มีของในคลัง เพิ่มไอเทมแรกกันเลย</div>';
@@ -1507,7 +1508,23 @@ async function addItem(){
   const qty = parseInt(document.getElementById('itemQty').value) || 0;
   const note = document.getElementById('itemNote').value.trim();
   if(!name){ alert('กรอกชื่อของ'); return; }
-  inventory.push({ id: uid(), name, category, qty, note, image: pendingItemImage, date: nowStr(), ts: Date.now() });
+
+  // ตรวจสอบว่ามีของชื่อนี้และหมวดหมู่เดียวกันอยู่แล้วหรือไม่
+  const existing = inventory.find(it => it.name.toLowerCase() === name.toLowerCase() && it.category === category);
+
+  if (existing) {
+    // ถ้ามีอยู่แล้ว ให้เพิ่มจำนวนเข้าไป (สอดคล้องกับระบบส่งของ)
+    const oldQty = existing.qty;
+    existing.qty += qty;
+    if (note) existing.note = note;
+    if (pendingItemImage) existing.image = pendingItemImage;
+    await logAction(`เพิ่มจำนวนของที่มีอยู่แล้ว: ${name} เพิ่มอีก ${qty} (จาก ${oldQty} เป็น ${existing.qty})`);
+  } else {
+    // ถ้ายังไม่มี ให้เพิ่มเป็นรายการใหม่
+    inventory.push({ id: uid(), name, category, qty, note, image: pendingItemImage, date: nowStr(), ts: Date.now() });
+    await logAction(`เพิ่มของใหม่เข้าคลัง: ${name} จำนวน ${qty}`);
+  }
+
   document.getElementById('itemName').value='';
   document.getElementById('itemCategory').value='งานดำ';
   document.getElementById('itemQty').value='0';
@@ -1516,7 +1533,6 @@ async function addItem(){
   pendingItemImage = null;
   renderItems();
   await saveKey(KEYS.items, inventory);
-  await logAction(`เพิ่มของเข้าคลัง: ${name} จำนวน ${qty}`);
 }
 async function updateStock(id){
   if(!isAdmin()){ alert('บัญชีนี้ไม่มีสิทธิ์แก้จำนวนของ'); return; }
@@ -1620,10 +1636,10 @@ async function deleteBorrow(id){
 function renderDeliverySelects(){
   const itemOpts = '<option value="">— เลือกของในคลัง —</option>' +
     inventory.map(it=>`<option value="${it.id}">${escapeHtml(it.name)} (คงเหลือ ${it.qty})</option>`).join('');
-  const receiverOpts = '<option value="">— เลือกสมาชิก —</option>' +
+  const senderOpts = '<option value="">— เลือกสมาชิก —</option>' +
     members.map(m=>`<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
   document.getElementById('dvItem').innerHTML = itemOpts;
-  document.getElementById('dvReceiver').innerHTML = receiverOpts;
+  document.getElementById('dvSender').innerHTML = senderOpts;
   const hint = document.getElementById('deliveryHint');
   if(inventory.length===0 && members.length===0){
     hint.textContent = 'ยังไม่มีสมาชิกและของในระบบ ไปเพิ่มที่แท็บอื่น ๆ ก่อน';
@@ -1640,23 +1656,23 @@ function renderDelivery(){
   document.getElementById('deliveryCount').textContent = deliveryRecords.length + ' รายการ';
   const list = document.getElementById('deliveryList');
   if(deliveryRecords.length===0){
-    list.innerHTML = '<div class="empty"><span class="icon">📮</span>ยังไม่มีการส่งของ</div>';
+    list.innerHTML = '<div class="empty"><span class="icon">📮</span>ยังไม่มีการส่งของเข้าแก๊งค์</div>';
     return;
   }
   const sorted = [...deliveryRecords].sort((a,b)=> b.ts - a.ts);
   list.innerHTML = sorted.map(d=>{
     const it = inventory.find(x=>x.id===d.itemId);
-    const receiver = members.find(x=>x.id===d.receiverId);
-    const statusIcon = d.status==='received'?'✅':(d.status==='sent'?'✈️':'⏳');
+    const sender = members.find(x=>x.id===d.senderId);
+    const statusIcon = d.status==='received'?'✅':'⏳';
     return `
     <div class="row-item">
       <div style="flex:1;">
-        <div style="font-weight:600;">${statusIcon} ${itemName(d.itemId)} x${d.qty} → ${escapeHtml(receiver ? receiver.name : 'ไม่ทราบ')}</div>
+        <div style="font-weight:600;">${statusIcon} ${itemName(d.itemId)} x${d.qty} ← จาก ${escapeHtml(sender ? sender.name : 'ไม่ทราบ')}</div>
         <div class="meta">${d.date}</div>
-        ${d.note?`<div class="meta" style="margin-top:4px; color:var(--ink-dim);">📍 ${escapeHtml(d.note)}</div>`:''}
+        ${d.note?`<div class="meta" style="margin-top:4px; color:var(--ink-dim);">📝 ${escapeHtml(d.note)}</div>`:''}
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0;">
-        ${d.status!=='received'?`<button class="ghost" onclick="markDeliveryReceived('${d.id}')" style="padding:5px 10px;font-size:12px;">✓ ได้รับ</button>`:``}
+        ${d.status!=='received'?`<button class="ghost" onclick="markDeliveryReceived('${d.id}')" style="padding:5px 10px;font-size:12px;">✓ ตรวจรับแล้ว</button>`:``}
         ${currentRole==='admin'?`<button class="ghost" style="color:#e8828d;padding:5px 10px;font-size:12px;" onclick="deleteDelivery('${d.id}')">ลบ</button>`:''}
       </div>
     </div>
@@ -1667,23 +1683,28 @@ function renderDelivery(){
 async function addDelivery(){
   const itemId = document.getElementById('dvItem').value;
   const qty = parseInt(document.getElementById('dvQty').value) || 0;
-  const receiverId = document.getElementById('dvReceiver').value;
+  const senderId = document.getElementById('dvSender').value;
   const status = document.getElementById('dvStatus').value;
   const note = document.getElementById('dvNote').value.trim();
   if(!itemId){ alert('เลือกชื่อของ'); return; }
   if(!qty || qty<=0){ alert('กรอกจำนวนให้ถูกต้อง'); return; }
-  if(!receiverId){ alert('เลือกชื่อผู้รับ'); return; }
-  if(!note){ alert('กรอกหมายเหตุ/ที่อยู่'); return; }
+  if(!senderId){ alert('เลือกชื่อผู้ส่ง'); return; }
+  
   const it = inventory.find(x=>x.id===itemId);
-  deliveryRecords.push({ id: uid(), itemId, qty, receiverId, status, note, date: nowStr(), ts: Date.now() });
-  if(it){ it.qty += qty; }
+  if(!it){ alert('ไม่พบข้อมูลของในคลัง'); return; }
+
+  deliveryRecords.push({ id: uid(), itemId, qty, senderId, status, note, date: nowStr(), ts: Date.now() });
+  
+  // เพิ่มจำนวนของในคลังทันที
+  it.qty += qty;
+  
   document.getElementById('dvQty').value='1';
   document.getElementById('dvNote').value='';
   renderDelivery();
   renderItems();
   await saveKey(KEYS.delivery, deliveryRecords);
   await saveKey(KEYS.items, inventory);
-  await logAction(`ส่งของเข้าคลัง: ${itemName(itemId)} x${qty} (โดย ${members.find(m=>m.id===receiverId)?.name||'?'})`);
+  await logAction(`สมาชิกส่งของเข้าคลัง: ${itemName(itemId)} x${qty} (โดย ${members.find(m=>m.id===senderId)?.name||'?'})`);
 }
 
 async function markDeliveryReceived(id){
@@ -1691,7 +1712,7 @@ async function markDeliveryReceived(id){
   if(d){ d.status = 'received'; }
   renderDelivery();
   await saveKey(KEYS.delivery, deliveryRecords);
-  if(d) await logAction(`ยืนยันการได้รับของ: ${itemName(d.itemId)} x${d.qty}`);
+  if(d) await logAction(`ยืนยันการตรวจรับของเข้าคลัง: ${itemName(d.itemId)} x${d.qty}`);
 }
 
 async function deleteDelivery(id){
