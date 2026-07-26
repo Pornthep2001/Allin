@@ -979,15 +979,18 @@ function renderLog(){
     return;
   }
   const sorted = [...activityLog].sort((a,b)=> b.ts - a.ts);
-  list.innerHTML = sorted.map(l=>`
+  list.innerHTML = sorted.map(l=>{
+    const ipSegment = currentRole === 'admin' ? ` · IP: ${escapeHtml(l.ip || 'ไม่ทราบ IP')}` : '';
+    return `
     <div class="log-item">
       <span class="log-role ${l.role==='admin'?'admin':'member'}">${l.role==='admin' ? '🔑 Admin' : '👁 Member'}</span>
       <div>
         <div class="log-text">${escapeHtml(l.text)}</div>
-        <div class="log-time">${l.date} · IP: ${escapeHtml(l.ip || 'ไม่ทราบ IP')}</div>
+        <div class="log-time">${l.date}${ipSegment}</div>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 async function loadAll(){
