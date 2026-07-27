@@ -434,6 +434,7 @@
     <button data-tab="borrow">📦 เบิก / ยืมของ</button>
     <button data-tab="delivery">🚚 ส่งของแก๊งค์</button>
     <button data-tab="story">🗡️ สตอรี่</button>
+    <button data-tab="accounts" class="admin-only">🔑 จัดการรหัส</button>
     <button data-tab="log">📜 Log</button>
   </nav>
 
@@ -753,14 +754,37 @@
     </div>
   </section>
 
-  <!-- ===== STORY TAB ===== -->
-  <section class="panel" id="panel-story">
-    <div class="card">
-      <h2>สตอรี่ — อาวุธประจำตัว <span class="eyebrow">Loadout</span></h2>
-      <p class="hint" style="margin-top:-8px;margin-bottom:14px;">สรุปรายชื่อสมาชิกพร้อมอาวุธที่ถืออยู่ (สูงสุด 3 ชิ้น) และเลเวลปัจจุบัน เรียงตามลำดับที่ตั้งไว้ — แก้ไขอาวุธ/เลเวล/ลำดับได้ที่แท็บ "สมาชิก" (เฉพาะบัญชี Admin)</p>
-      <div class="list" id="storyList"></div>
+    <!-- ===== ACCOUNTS TAB (ADMIN ONLY) ===== -->
+  <section class="panel" id="panel-accounts">
+    <div class="card admin-only">
+      <h2>สร้างรหัสผ่านสำหรับสมาชิก <span class="eyebrow">Account Management</span></h2>
+      <p class="hint" style="margin-top:-8px;margin-bottom:14px;">สร้าง Username และ Password ให้สมาชิกใช้เข้าสู่ระบบ (รองรับ 30-40+ คน) ระบบจะเก็บข้อมูลแยกจากรหัสหลัก</p>
+      
+      <div class="form-grid">
+        <div class="field">
+          <label>Username (ภาษาอังกฤษ)</label>
+          <input type="text" id="accUser" placeholder="เช่น player01" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="text" id="accPass" placeholder="เช่น 123456" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>ชื่อสมาชิก (IC)</label>
+          <select id="accMemberLink"><option value="">— เลือกสมาชิก —</option></select>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="primary" onclick="createAccount()">สร้างรหัสผ่าน</button>
+      </div>
+    </div>
+
+    <div class="card admin-only">
+      <h2>รายการรหัสผ่านสมาชิก <span class="count-badge" id="accountCount">0 บัญชี</span></h2>
+      <div class="list" id="accountList"></div>
     </div>
   </section>
+
 
   <!-- ===== LOG TAB ===== -->
   <section class="panel" id="panel-log">
@@ -782,6 +806,7 @@ const KEYS = {
   items: 'allin-inventory',
   borrow: 'allin-borrow-records',
   delivery: 'allin-delivery-records',
+  accounts: 'allin-user-accounts',
   log: 'allin-activity-log'
 };
 let members = [];
@@ -790,6 +815,7 @@ let announcements = [];
 let inventory = [];
 let borrowRecords = [];
 let deliveryRecords = [];
+let userAccounts = [];
 let activityLog = [];
 let pendingMemberImage = null;
 let pendingItemImage = null;
@@ -890,14 +916,22 @@ async function tryLogin(){
   const p = document.getElementById('loginPass').value;
   const err = document.getElementById('loginError');
   const hash = await sha256Hex(u + ':' + p);
+  
   if(hash === ADMIN_CREDENTIAL_HASH){
     currentRole = 'admin';
   } else if(hash === MEMBER_CREDENTIAL_HASH){
     currentRole = 'member';
   } else {
-    err.textContent = 'รหัสไม่ถูกต้อง ลองใหม่อีกครั้ง';
-    return;
+    // Check if it's one of the generated member accounts
+    const userAcc = userAccounts.find(acc => acc.username === u && acc.password === p);
+    if(userAcc){
+      currentRole = 'member';
+    } else {
+      err.textContent = 'รหัสไม่ถูกต้อง ลองใหม่อีกครั้ง';
+      return;
+    }
   }
+  
   if(!locationVerified){
     err.textContent = 'กรุณาอนุญาตตำแหน่งก่อนเข้าสู่ระบบ';
     return;
@@ -1119,6 +1153,7 @@ async function loadAll(){
   inventory = await loadKey(KEYS.items, []);
   borrowRecords = await loadKey(KEYS.borrow, []);
   deliveryRecords = await loadKey(KEYS.delivery, []);
+  userAccounts = await loadKey(KEYS.accounts, []);
   activityLog = await loadKey(KEYS.log, []);
   if(ensureMemberOrder()){ await saveKey(KEYS.members, members); }
   renderMembers();
@@ -1129,15 +1164,76 @@ async function loadAll(){
   renderDeliverySelects();
   renderDelivery();
   renderStory();
+  renderAccounts();
   renderLog();
+}
+
+// ---------- ACCOUNTS (ADMIN ONLY) ----------
+function renderAccounts(){
+  const list = document.getElementById('accountList');
+  if(!list) return;
+  document.getElementById('accountCount').textContent = userAccounts.length + ' บัญชี';
+  if(userAccounts.length === 0){
+    list.innerHTML = '<div class="empty"><span class="icon">🔑</span>ยังไม่มีการสร้างรหัสผ่านสมาชิก</div>';
+    return;
+  }
+  const sorted = [...userAccounts].sort((a,b)=> b.ts - a.ts);
+  list.innerHTML = sorted.map(acc => `
+    <div class="row-item">
+      <div>
+        <div style="font-weight:700; color:var(--gold-soft);">${escapeHtml(acc.username)}</div>
+        <div class="meta">Password: <code>${escapeHtml(acc.password)}</code></div>
+        <div class="meta">สมาชิก: ${escapeHtml(memberName(acc.memberId))}</div>
+      </div>
+      <button class="ghost" style="color:#e8828d;" onclick="deleteAccount('${acc.id}')">ลบ</button>
+    </div>
+  `).join('');
+}
+
+async function createAccount(){
+  const user = document.getElementById('accUser').value.trim();
+  const pass = document.getElementById('accPass').value.trim();
+  const memberId = document.getElementById('accMemberLink').value;
+  
+  if(!user || !pass || !memberId){
+    alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+    return;
+  }
+  
+  if(userAccounts.some(acc => acc.username === user)){
+    alert('Username นี้มีในระบบแล้ว');
+    return;
+  }
+  
+  const newAcc = { id: uid(), username: user, password: pass, memberId, ts: Date.now() };
+  userAccounts.push(newAcc);
+  
+  document.getElementById('accUser').value = '';
+  document.getElementById('accPass').value = '';
+  
+  renderAccounts();
+  await saveKey(KEYS.accounts, userAccounts);
+  await logAction(`สร้างรหัสผ่านใหม่สำหรับ: ${user} (${memberName(memberId)})`);
+}
+
+async function deleteAccount(id){
+  const acc = userAccounts.find(a => a.id === id);
+  if(!acc) return;
+  if(!confirm(`ยืนยันการลบรหัสของ ${acc.username}?`)) return;
+  
+  userAccounts = userAccounts.filter(a => a.id !== id);
+  renderAccounts();
+  await saveKey(KEYS.accounts, userAccounts);
+  await logAction(`ลบรหัสผ่านของ: ${acc.username}`);
 }
 
 // ---------- MEMBERS ----------
 function renderMemberSelects(){
   const opts = '<option value="">— เลือกสมาชิก —</option>' +
     members.map(m=>`<option value="${m.id}">${escapeHtml(m.name)} (${escapeHtml(m.role)})</option>`).join('');
-  ['fundName','annAuthor','brName'].forEach(id=>{
+  ['fundName','annAuthor','brName', 'accMemberLink'].forEach(id=>{
     const el = document.getElementById(id);
+    if(!el) return;
     const current = el.value;
     el.innerHTML = opts;
     if([...el.options].some(o=>o.value===current)) el.value = current;
