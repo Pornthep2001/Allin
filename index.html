@@ -7,6 +7,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:wght@600;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+  /* Nav submenu popup */
+  .nav-submenu{position:absolute;background:linear-gradient(180deg,var(--card-2),var(--card));border:1px solid var(--line);padding:8px;border-radius:8px;display:flex;gap:6px;z-index:1200;box-shadow:0 10px 30px rgba(0,0,0,0.5)}
+  .nav-submenu button{padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--ink-dim);cursor:pointer}
+  .nav-submenu button:hover{color:var(--ink);border-color:var(--gold)}
+  .ghost.active{border-color:var(--gold);color:var(--gold-soft);background:rgba(212,175,55,0.04)}
   :root{
     --felt-dark:#0b2e24;
     --felt:#0f3d2f;
@@ -107,8 +112,19 @@
   .balance-text .amount{font-family:'Bebas Neue',sans-serif;font-size:52px;color:var(--gold-soft);letter-spacing:1px;line-height:1;}
   .balance-text .amount span{font-size:22px;color:var(--ink-dim);margin-left:6px;}
 
-  .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:6px;}
-  .form-grid.full{grid-template-columns:1fr;}
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:12px;}
+  .form-grid.columns-2{grid-template-columns:repeat(2,minmax(220px,1fr));}
+  .form-grid.columns-3{grid-template-columns:220px repeat(2,minmax(200px,1fr));}
+  .form-grid.columns-4{grid-template-columns:220px repeat(3,minmax(180px,1fr));}
+  .form-grid.full{grid-template-columns:repeat(auto-fit,minmax(260px,1fr));}
+  .member-upload{display:grid;grid-template-rows:1fr auto;gap:12px;}
+  .form-grid.form-inline .field{display:flex;align-items:center;gap:12px;}
+  .form-grid.form-inline .field label{display:inline-flex;align-items:center;min-width:130px;margin-bottom:0;white-space:nowrap;}
+  .form-grid.form-inline .field input,
+  .form-grid.form-inline .field select,
+  .form-grid.form-inline .field textarea{width:auto;flex:1;}
+  .form-grid.form-inline.full .field{display:flex;flex-direction:column;}
+  @media (max-width:900px){ .form-grid{grid-template-columns:1fr;} .form-grid.columns-2,.form-grid.columns-3,.form-grid.columns-4{grid-template-columns:1fr;} .form-grid.full{grid-template-columns:1fr;} }
   .weapon-slot-inputs{display:flex;gap:6px;}
   .weapon-slot-inputs select:first-child{flex:2;}
   .weapon-slot-inputs select:last-child{flex:1;}
@@ -118,6 +134,7 @@
     border-radius:8px;padding:10px 12px;color:var(--ink);font-family:'Inter';font-size:14px;
     outline:none;transition:border-color .15s;
   }
+  select[multiple]{min-height:110px;padding:8px 10px;background:rgba(0,0,0,0.18);}
   input:focus,select:focus,textarea:focus{border-color:var(--gold);}
   select option{background:#16281f;color:var(--ink);}
   textarea{resize:vertical;min-height:70px;}
@@ -162,29 +179,40 @@
   .empty .icon{font-size:26px;display:block;margin-bottom:8px;}
 
   /* ---- Members grid ---- */
-  .member-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin-top:18px;}
+  .member-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin-top:18px;}
+  .points-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-top:14px;}
+  .points-card{background:rgba(255,255,255,0.04);border:1px solid rgba(212,175,55,0.14);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;}
+  .points-card .score{font-family:'Bebas Neue',sans-serif;font-size:38px;color:var(--gold-soft);line-height:1;}
+  .points-card .meta{font-size:12px;color:var(--ink-dim);margin-top:4px;}
+  @media (max-width:1000px){ .member-grid{grid-template-columns:repeat(auto-fit,minmax(210px,1fr));} }
+  @media (max-width:720px){ .member-grid{grid-template-columns:repeat(auto-fit,minmax(180px,1fr));} }
+  @media (max-width:560px){ .member-grid{grid-template-columns:1fr;} }
   .member-card{
-    background:rgba(0,0,0,0.18);border:1px solid var(--line);border-radius:12px;
-    padding:16px 12px;text-align:center;position:relative;transition:border-color .15s;
+    background:rgba(0,0,0,0.18);border:1px solid var(--line);border-radius:14px;
+    padding:14px 14px 14px;position:relative;transition:border-color .15s,transform .15s;
+    display:grid;grid-template-columns:72px 1fr auto;gap:14px;align-items:center;
   }
-  .member-card:hover{border-color:var(--gold);}
+  .member-card:hover{border-color:var(--gold);transform:translateY(-2px);}
   .member-card[draggable="true"]{cursor:grab;}
   .member-card[draggable="true"]:active{cursor:grabbing;}
+  .member-card .member-info{display:grid;gap:6px;}
   .avatar{
-    width:64px;height:64px;border-radius:10px;margin:0 auto 10px;
+    width:72px;height:72px;border-radius:18px;
     display:flex;align-items:center;justify-content:center;
-    font-family:'Bebas Neue';font-size:24px;color:#fff;
+    font-family:'Bebas Neue';font-size:26px;color:#fff;
     background:linear-gradient(135deg, var(--chip-blue), var(--felt-light));
     border:2px solid var(--gold);object-fit:cover;overflow:hidden;
   }
   .avatar img{width:100%;height:100%;object-fit:cover;}
-  .member-card .name{font-weight:700;font-size:14px;color:var(--ink);}
+  .member-card .name{font-weight:700;font-size:15px;color:var(--ink);}
   .member-card .role{
-    display:inline-block;margin-top:5px;font-size:10.5px;letter-spacing:0.4px;
-    color:var(--gold-soft);background:rgba(212,175,55,0.1);padding:2px 9px;border-radius:999px;
+    display:inline-block;font-size:11px;letter-spacing:0.4px;
+    color:var(--gold-soft);background:rgba(212,175,55,0.1);padding:4px 10px;border-radius:999px;
   }
-  .member-card .joined{font-size:10.5px;color:var(--ink-dim);margin-top:6px;}
-  .member-card .member-detail{font-size:10.5px;color:var(--ink-dim);margin-top:3px;}
+  .member-card .joined{font-size:10px;color:var(--ink-dim);}
+  .member-card .member-detail{font-size:11px;color:var(--ink-dim);}
+  .member-card .member-details{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;line-height:1.4;}
+  .member-card .member-details span{font-size:11px;color:var(--ink-dim);}
   .member-card .del{
     position:absolute;top:8px;right:8px;background:none;border:none;color:var(--ink-dim);
     cursor:pointer;font-size:13px;opacity:0.5;
@@ -204,17 +232,49 @@
   .rank-input{width:52px;padding:5px 6px;font-size:12px;text-align:center;}
 
   /* ---- Inventory / Menu grid ---- */
-  .item-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px;margin-top:18px;}
+  .item-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin-top:18px;}
+  @media (max-width:920px){ .item-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));} }
+  @media (max-width:700px){ .item-grid{grid-template-columns:repeat(auto-fit,minmax(180px,1fr));} }
+  @media (max-width:520px){ .item-grid{grid-template-columns:1fr;} }
   .item-card{
-    background:rgba(0,0,0,0.2);border:1px solid var(--line);border-radius:14px;overflow:hidden;
-    display:flex;flex-direction:column;transition:transform .15s,border-color .15s;
+    background:rgba(0,0,0,0.2);border:1px solid var(--line);border-radius:18px;overflow:hidden;
+    display:grid;grid-template-columns:120px 1fr;transition:transform .15s,border-color .15s,box-shadow .15s;
+    cursor:pointer;min-height:150px;
   }
-  .item-card:hover{transform:translateY(-3px);border-color:var(--gold);}
+  .item-card:hover{transform:translateY(-3px);border-color:var(--gold);box-shadow:0 10px 30px rgba(0,0,0,0.18);}
   .item-thumb{
-    width:100%;aspect-ratio:1/1;background:linear-gradient(135deg, var(--felt-light), var(--card-2));
+    width:100%;min-height:120px;aspect-ratio:1/1;background:linear-gradient(135deg, var(--felt-light), var(--card-2));
     display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;
+    border-bottom:1px solid rgba(255,255,255,0.08);
   }
   .item-thumb img{width:100%;height:100%;object-fit:cover;}
+  /* Activity / airdrop item list thumbnails */
+  .act-items-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;}
+  .act-item-card{
+    display:grid;
+    grid-template-columns: auto minmax(0,1fr) auto;
+    gap:14px;
+    align-items:center;
+    padding:14px;
+    background:rgba(0,0,0,0.16);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:18px;
+  }
+  .act-item-start{display:flex;align-items:center;gap:12px;}
+  .act-item-card input[type=checkbox]{transform:scale(1.2);margin-top:0;}
+  .act-item-card .act-thumb{width:70px;height:70px;border-radius:18px;overflow:hidden;background:linear-gradient(135deg, var(--felt-light), var(--card-2));display:flex;align-items:center;justify-content:center;}
+  .act-item-card .act-thumb img{width:100%;height:100%;object-fit:cover;}
+  .act-item-card .act-info{display:flex;flex-direction:column;gap:6px;justify-content:center;}
+  .act-item-card .act-info .iname{font-size:15px;font-weight:700;color:var(--ink);}
+  .act-item-card .act-info .meta{font-size:12px;color:var(--ink-dim);}
+  .act-item-card input[type=number]{width:88px;}
+  .act-item-card .noimg{font-size:26px;opacity:0.45;}
+  @media (max-width:820px){
+    .act-item-card{grid-template-columns:auto minmax(0,1fr);}
+    .act-item-card input[type=number]{width:100%;}
+  }
+  /* ensure item-grid thumbnails still display nicely */
+  .item-thumb .noimg, .act-thumb .noimg{font-size:22px;opacity:0.5}
   .item-thumb .noimg{font-size:34px;opacity:0.35;}
   .stock-badge{
     position:absolute;top:8px;right:8px;background:rgba(11,46,36,0.85);
@@ -324,7 +384,7 @@
     background:rgba(212,175,55,0.1);color:var(--ink-dim);border:1px solid var(--line);
   }
   .role-badge.admin{background:rgba(212,175,55,0.18);color:var(--gold-soft);border-color:var(--gold);}
-  .admin-only{}
+  .admin-only{display:inline-block;}
   body.role-member .admin-only{display:none !important;}
 
   /* ---- Activity log ---- */
@@ -430,10 +490,13 @@
     <button data-tab="members" class="active">🧑‍🤝‍🧑 สมาชิก</button>
     <button data-tab="fund">💰 กองทุนแก๊งค์</button>
     <button data-tab="announce">📣 ประกาศ</button>
+    <button data-tab="rules">📜 กฏระเบียบ</button>
+    <button data-tab="activities">🎯 กิจกรรม</button>
     <button data-tab="items">🎒 เมนูของ</button>
     <button data-tab="borrow">📦 เบิก / ยืมของ</button>
     <button data-tab="delivery">🚚 ส่งของแก๊งค์</button>
-    <button data-tab="story">🗡️ สตอรี่</button>
+    <button data-tab="work">🖤 งานดำ</button>
+    <button data-tab="points">⭐ แต้มสะสม</button>
     <button data-tab="accounts" class="admin-only">🔑 จัดการรหัส</button>
     <button data-tab="log">📜 Log</button>
   </nav>
@@ -525,7 +588,7 @@
             </select>
           </div>
         </div>
-        <div class="field">
+        <div class="field" style="grid-column:1/-1;">
           <label>หมายเหตุ</label>
           <input type="text" id="memberNote" placeholder="เช่น สายฟาร์ม, สายบอส">
         </div>
@@ -538,6 +601,280 @@
     <div class="card">
       <h2>รายชื่อสมาชิก <span class="count-badge" id="memberCount">0 คน</span></h2>
       <div class="member-grid" id="memberGrid"></div>
+    </div>
+  </section>
+
+  <!-- ===== RULES TAB ===== -->
+  <section class="panel" id="panel-rules">
+    <div class="card admin-only">
+      <h2>เพิ่มกฏระเบียบแก๊งค์ <span class="eyebrow">Rules</span></h2>
+      <div class="form-grid full" style="margin-top:6px;">
+        <div class="field">
+          <label>หัวข้อกฏ</label>
+          <input type="text" id="ruleTitle" placeholder="เช่น ห้ามโกง">
+        </div>
+      </div>
+      <div class="form-grid full" style="margin-top:6px;">
+        <div class="field">
+          <label>รายละเอียด</label>
+          <textarea id="ruleContent" placeholder="รายละเอียดกฏ..."></textarea>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="primary" onclick="addRule()">เพิ่มกฏ</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>กฏระเบียบแก๊งค์</h2>
+      <div class="list" id="ruleList"></div>
+    </div>
+  </section>
+
+  <!-- ===== ACTIVITIES TAB ===== -->
+  <section class="panel" id="panel-activities">
+    <div class="card">
+      <h2>กิจกรรม <span class="eyebrow">Activities</span></h2>
+      <div class="form-grid">
+            <div class="field">
+              <label>ประเภทกิจกรรม</label>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="ghost" id="actBtn-sell" onclick="setActivityView('sell')">ขายสาร</button>
+                <button class="ghost" id="actBtn-airdrop" onclick="setActivityView('airdrop')">แอร์ดรอป</button>
+                <button class="ghost" id="actBtn-box" onclick="setActivityView('box')">กล่องพิเศษ</button>
+              </div>
+            </div>
+        <div class="field">
+          <label>ชื่อกิจกรรม / รายการ</label>
+          <input type="text" id="actTitle" placeholder="เช่น ขายสาร 50%">
+        </div>
+      </div>
+      <div class="actions">
+        <button class="primary" onclick="addActivity()">เพิ่มกิจกรรม</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>รายการกิจกรรม</h2>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+          <button class="ghost" onclick="setActivityView('sell')">ขายสาร</button>
+          <button class="ghost" onclick="setActivityView('airdrop')">แอร์ดรอป</button>
+          <button class="ghost" onclick="setActivityView('box')">กล่องพิเศษ</button>
+        </div>
+        <div class="list" id="activityList">(เลือกหัวข้อย่อยจากเมนูเพื่อเข้าสู่หน้ารายการย่อย)</div>
+    </div>
+  </section>
+
+    <!-- DEDICATED ACTIVITY PAGES -->
+    <section class="panel" id="panel-activities-sell">
+      <div class="card">
+        <h2>กิจกรรม — ขายสาร</h2>
+          <div class="form-grid">
+            <div class="field" style="grid-column:1/3;">
+              <label>สมาชิก (เลือกได้หลายคน)</label>
+              <select id="actMember-sell" multiple size="4"></select>
+            </div>
+            <div class="field" style="grid-column:3/-1;">
+              <label>จุดที่ไปเล่น / สถานที่</label>
+              <input type="text" id="actLocation-sell" placeholder="เช่น โซน A บอส - จุดขาย">
+            </div>
+            <div class="field" style="grid-column:1/-1;">
+              <label>จำนวนเงินแดงที่ได้รับ (บาท)</label>
+              <input type="number" id="actMoney-sell" placeholder="เช่น 500" min="0">
+            </div>
+          </div>
+          <div class="actions">
+            <button class="primary" onclick="performActivity('sell')">บันทึก (ขายสาร)</button>
+          </div>
+      </div>
+      <div class="card">
+        <h2>รายการ ขายสาร</h2>
+          <div class="list" id="activityList-sell"></div>
+          <h3 style="margin-top:12px;color:var(--gold-soft);">ประวัติการเล่น ขายสาร</h3>
+          <div class="list" id="activityPerformedList-sell"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-activities-airdrop">
+      <div class="card">
+        <h2>กิจกรรม — แอร์ดรอป</h2>
+          <div class="form-grid">
+            <div class="field" style="grid-column:1/3;">
+              <label>สมาชิก (เลือกได้หลายคน)</label>
+              <select id="actMember-airdrop" multiple size="4"></select>
+            </div>
+            <div class="field" style="grid-column:3/-1;">
+              <label>จุดที่ไปเล่น / สถานที่</label>
+              <input type="text" id="actLocation-airdrop" placeholder="เช่น จุดแจกกลางเมือง">
+            </div>
+            <div class="field" style="grid-column:1/-1;">
+              <label>ของที่ได้ (เลือกและระบุจำนวน) — แสดงรูปจากเมนูของ</label>
+              <div id="actItems-airdrop" class="act-items-list" style="max-height:220px;overflow:auto;padding:6px;border:1px solid var(--line);border-radius:8px;background:rgba(0,0,0,0.06);"></div>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="primary" onclick="performActivity('airdrop')">บันทึก (แอร์ดรอป)</button>
+          </div>
+      </div>
+      <div class="card">
+        <h2>รายการ แอร์ดรอป</h2>
+          <div class="list" id="activityList-airdrop"></div>
+          <h3 style="margin-top:12px;color:var(--gold-soft);">ประวัติการเล่น แอร์ดรอป</h3>
+          <div class="list" id="activityPerformedList-airdrop"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-activities-box">
+      <div class="card">
+        <h2>กิจกรรม — กล่องพิเศษ</h2>
+          <div class="form-grid">
+            <div class="field" style="grid-column:1/3;">
+              <label>สมาชิก (เลือกได้หลายคน)</label>
+              <select id="actMember-box" multiple size="4"></select>
+            </div>
+            <div class="field" style="grid-column:3/-1;">
+              <label>จุดที่ไปเล่น / สถานที่</label>
+              <input type="text" id="actLocation-box" placeholder="เช่น สนามกิจกรรม">
+            </div>
+            <div class="field" style="grid-column:1/-1;">
+              <label>ของที่ได้ (เลือกและระบุจำนวน) — แสดงรูปจากเมนูของ</label>
+              <div id="actItems-box" class="act-items-list" style="max-height:220px;overflow:auto;padding:6px;border:1px solid var(--line);border-radius:8px;background:rgba(0,0,0,0.06);"></div>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="primary" onclick="performActivity('box')">บันทึก (กล่องพิเศษ)</button>
+          </div>
+      </div>
+      <div class="card">
+        <h2>รายการ กล่องพิเศษ</h2>
+          <div class="list" id="activityList-box"></div>
+          <h3 style="margin-top:12px;color:var(--gold-soft);">ประวัติการเล่น กล่องพิเศษ</h3>
+          <div class="list" id="activityPerformedList-box"></div>
+      </div>
+    </section>
+
+  <!-- ===== WORK TAB ===== -->
+  <section class="panel" id="panel-work">
+    <div class="card">
+      <h2>งานดำ <span class="eyebrow">Black Ops</span></h2>
+      <div class="form-grid">
+        <div class="field">
+          <label>ประเภทงาน</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="ghost" id="workBtn-steal" onclick="setWorkView('steal')">จกปูน/ลิค</button>
+            <button class="ghost" id="workBtn-sellDrug" onclick="setWorkView('sellDrug')">ขายยา</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>รายละเอียด</label>
+          <input type="text" id="workTitle" placeholder="เช่น แย่งพื้นที่บอส">
+        </div>
+      </div>
+      <div class="actions">
+        <button class="primary" onclick="addWork()">เพิ่มงาน</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>รายการงานดำ</h2>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+          <button class="ghost" onclick="setWorkView('steal')">จกปูน/ลิค</button>
+          <button class="ghost" onclick="setWorkView('sellDrug')">ขายยา</button>
+      </div>
+        <div class="list" id="workList">(เลือกหัวข้อย่อยจากเมนูเพื่อเข้าสู่หน้ารายการย่อย)</div>
+    </div>
+  </section>
+
+    <!-- DEDICATED WORK PAGES -->
+    <section class="panel" id="panel-work-steal">
+      <div class="card">
+        <h2>งานดำ — จกปูน/ลิค</h2>
+        <div class="form-grid">
+          <div class="field" style="grid-column:1/3;">
+            <label>สมาชิก</label>
+            <select id="workMember-steal"><option value="">— เลือกสมาชิก —</option></select>
+          </div>
+          <div class="field" style="grid-column:3/-1;">
+            <label>จุดที่ไปเล่น / สถานที่</label>
+            <input type="text" id="workLocation-steal" placeholder="เช่น โซน B">
+          </div>
+          <div class="field" style="grid-column:1/-1;">
+            <label>ปูน ที่ได้ (จำนวน)</label>
+            <input type="number" id="workItem-pun-steal" placeholder="เช่น 10" min="0">
+          </div>
+          <div class="field" style="grid-column:1/-1;">
+            <label>ลิค ที่ได้ (จำนวน)</label>
+            <input type="number" id="workItem-lic-steal" placeholder="เช่น 5" min="0">
+          </div>
+        </div>
+        <div class="actions">
+          <button class="primary" onclick="performWork('steal')">บันทึกงาน (จกปูน/ลิค)</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>รายการ จกปูน/ลิค</h2>
+        <div class="list" id="workList-steal"></div>
+        <h3 style="margin-top:12px;color:var(--gold-soft);">ประวัติการทำงาน จกปูน/ลิค</h3>
+        <div class="list" id="workPerformedList-steal"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-work-sellDrug">
+      <div class="card">
+        <h2>งานดำ — ขายยา</h2>
+        <div class="form-grid">
+          <div class="field" style="grid-column:1/3;">
+            <label>สมาชิก</label>
+            <select id="workMember-sellDrug"><option value="">— เลือกสมาชิก —</option></select>
+          </div>
+          <div class="field" style="grid-column:3/-1;">
+            <label>จุดที่ไปเล่น / สถานที่</label>
+            <input type="text" id="workLocation-sellDrug" placeholder="เช่น จุดส่งของ">
+          </div>
+          <div class="field" style="grid-column:1/-1;">
+            <label>จำนวนเงินแดงที่ได้รับ (บาท)</label>
+            <input type="number" id="workMoney-sellDrug" placeholder="เช่น 1000" min="0">
+          </div>
+        </div>
+        <div class="actions">
+          <button class="primary" onclick="performWork('sellDrug')">บันทึกงาน (ขายยา)</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>รายการ ขายยา</h2>
+        <div class="list" id="workList-sellDrug"></div>
+        <h3 style="margin-top:12px;color:var(--gold-soft);">ประวัติการทำงาน ขายยา</h3>
+        <div class="list" id="workPerformedList-sellDrug"></div>
+      </div>
+    </section>
+
+  <!-- ===== POINTS TAB ===== -->
+  <section class="panel" id="panel-points">
+    <div class="card">
+      <h2>แต้มสมาชิก <span class="eyebrow">Scoreboard</span></h2>
+      <div class="points-grid" id="pointsSummary"></div>
+    </div>
+
+    <div class="card">
+      <h2>เพิ่มแต้ม <span class="eyebrow">Grant Points</span></h2>
+      <div class="form-grid">
+        <div class="field">
+          <label>สมาชิก</label>
+          <select id="pointsMember"><option value="">— เลือกสมาชิก —</option></select>
+        </div>
+        <div class="field">
+          <label>จำนวนแต้ม</label>
+          <input type="number" id="pointsValue" value="0">
+        </div>
+      </div>
+      <div class="actions">
+        <button class="primary" onclick="addPoints()">เพิ่มแต้ม</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>ประวัติแต้ม</h2>
+      <div class="list" id="pointsList"></div>
     </div>
   </section>
 
@@ -596,7 +933,7 @@
     <div class="card admin-only">
       <h2>ตั้งประกาศใหม่ <span class="eyebrow">Announcement</span></h2>
       <div class="form-grid">
-        <div class="field" style="grid-column:1/-1;">
+        <div class="field">
           <label>หัวข้อ</label>
           <input type="text" id="annTitle" placeholder="เช่น นัดตีบอสวันเสาร์">
         </div>
@@ -625,7 +962,7 @@
   <!-- ===== ITEMS / MENU TAB ===== -->
   <section class="panel" id="panel-items">
     <div class="card admin-only">
-      <h2>เพิ่มของเข้าคลัง <span class="eyebrow">Item Menu</span></h2>
+      <h2 id="itemFormTitle">เพิ่มของเข้าคลัง <span class="eyebrow">Item Menu</span></h2>
       <div class="form-grid">
         <div class="field">
           <label>รูปภาพของ</label>
@@ -656,8 +993,9 @@
           <input type="text" id="itemNote" placeholder="รายละเอียดเพิ่มเติม">
         </div>
       </div>
-      <div class="actions">
-        <button class="primary" onclick="addItem()">เพิ่มของเข้าคลัง</button>
+      <div class="actions" style="align-items:center;">
+        <button class="primary" id="itemSaveButton" onclick="addItem()">เพิ่มของเข้าคลัง</button>
+        <button class="ghost" id="itemCancelButton" onclick="cancelEditItem()" style="display:none;">ยกเลิก</button>
       </div>
     </div>
 
@@ -807,6 +1145,12 @@ const KEYS = {
   borrow: 'allin-borrow-records',
   delivery: 'allin-delivery-records',
   accounts: 'allin-user-accounts',
+  rules: 'allin-rules',
+  activities: 'allin-activities',
+  work: 'allin-work',
+  points: 'allin-points',
+  activityRecords: 'allin-activity-performed',
+  workRecordsPerformed: 'allin-work-performed',
   log: 'allin-activity-log'
 };
 let members = [];
@@ -817,8 +1161,18 @@ let borrowRecords = [];
 let deliveryRecords = [];
 let userAccounts = [];
 let activityLog = [];
+let rulesList = [];
+let activities = { sell: [], airdrop: [], box: [] };
+let workRecords = { steal: [], sellDrug: [] };
+let pointsList = [];
+let performedActivities = { sell: [], airdrop: [], box: [] };
+let performedWork = { steal: [], sellDrug: [] };
 let pendingMemberImage = null;
 let pendingItemImage = null;
+let editingItemId = null;
+let editingDeliveryId = null;
+let currentActivityView = 'sell';
+let currentWorkView = 'steal';
 
 // ---------- Login gate ----------
 // Session state is persisted in localStorage so a logged-in user can
@@ -1001,6 +1355,8 @@ window.addEventListener('DOMContentLoaded', async ()=>{
     await loadAll();
     showAnnouncementPopup();
   }
+  // prepare hover submenus for activities/work nav items
+  createNavSubmenus();
 });
 
 // ---------- Tabs ----------
@@ -1154,6 +1510,12 @@ async function loadAll(){
   borrowRecords = await loadKey(KEYS.borrow, []);
   deliveryRecords = await loadKey(KEYS.delivery, []);
   userAccounts = await loadKey(KEYS.accounts, []);
+  rulesList = await loadKey(KEYS.rules, []);
+  activities = await loadKey(KEYS.activities, { sell: [], airdrop: [], box: [] });
+  workRecords = await loadKey(KEYS.work, { steal: [], sellDrug: [] });
+  pointsList = await loadKey(KEYS.points, []);
+  performedActivities = await loadKey(KEYS.activityRecords, { sell: [], airdrop: [], box: [] });
+  performedWork = await loadKey(KEYS.workRecordsPerformed, { steal: [], sellDrug: [] });
   activityLog = await loadKey(KEYS.log, []);
   if(ensureMemberOrder()){ await saveKey(KEYS.members, members); }
   renderMembers();
@@ -1163,6 +1525,14 @@ async function loadAll(){
   renderBorrow();
   renderDeliverySelects();
   renderDelivery();
+  renderRules();
+  // render all activity/work sub-views so lists are populated
+  ['sell','airdrop','box'].forEach(t=>renderActivities(t));
+  ['steal','sellDrug'].forEach(t=>renderWork(t));
+  renderPoints();
+  // render performed activity/work records
+  ['sell','airdrop','box'].forEach(t=>renderPerformedActivities(t));
+  ['steal','sellDrug'].forEach(t=>renderPerformedWork(t));
   renderStory();
   renderAccounts();
   renderLog();
@@ -1231,12 +1601,16 @@ async function deleteAccount(id){
 function renderMemberSelects(){
   const opts = '<option value="">— เลือกสมาชิก —</option>' +
     members.map(m=>`<option value="${m.id}">${escapeHtml(m.name)} (${escapeHtml(m.role)})</option>`).join('');
-  ['fundName','annAuthor','brName', 'accMemberLink'].forEach(id=>{
+  const ids = ['fundName','annAuthor','brName','pointsMember','accMemberLink',
+               'actMember-sell','actMember-airdrop','actMember-box',
+               'workMember-steal','workMember-sellDrug','accMemberLink'];
+  ids.forEach(id=>{
     const el = document.getElementById(id);
     if(!el) return;
     const current = el.value;
+    // preserve existing selection for non-multiple selects
     el.innerHTML = opts;
-    if([...el.options].some(o=>o.value===current)) el.value = current;
+    if(!el.multiple && [...el.options].some(o=>o.value===current)) el.value = current;
   });
   const noMembers = members.length === 0;
   document.getElementById('fundMemberHint').style.display = noMembers ? 'block' : 'none';
@@ -1277,14 +1651,19 @@ function renderMembers(){
         <span class="order-badge no-admin-only">#${idx+1}</span>
         <button class="del admin-only" onclick="deleteMember('${m.id}')">✕</button>
         <div class="avatar">${m.image ? `<img src="${m.image}">` : initials(m.name)}</div>
-        <div class="name">${escapeHtml(m.name)}</div>
-        <div class="role">${escapeHtml(m.role)}</div>
-        ${m.phone ? `<div class="member-detail">📞 ${escapeHtml(m.phone)}</div>` : ''}
-        ${m.ic ? `<div class="member-detail">🪪 IC: ${escapeHtml(m.ic)}</div>` : ''}
-        ${m.birthday ? `<div class="member-detail">🎂 ${formatBirthday(m.birthday)}</div>` : ''}
-        ${weapons.length ? `<div class="member-detail">${weapons.map(w=>`${weaponIcon(w.type)} ${w.type} (Lv.${escapeHtml(String(w.level))})`).join(' · ')}</div>` : ''}
-        <div class="joined">${m.note ? escapeHtml(m.note)+' · ' : ''}เข้าร่วม ${m.date}</div>
-        <div class="rank-controls admin-only">
+        <div class="member-info">
+          <div class="name">${escapeHtml(m.name)}</div>
+          <div class="role">${escapeHtml(m.role)}</div>
+          <div class="member-details">
+            ${m.phone ? `<span>📞 ${escapeHtml(m.phone)}</span>` : ''}
+            ${m.ic ? `<span>🪪 IC: ${escapeHtml(m.ic)}</span>` : ''}
+            ${m.birthday ? `<span>🎂 ${formatBirthday(m.birthday)}</span>` : ''}
+            ${weapons.length ? `<span>${weapons.map(w=>`${weaponIcon(w.type)} ${w.type} Lv.${escapeHtml(String(w.level))}`).join(' · ')}</span>` : ''}
+          </div>
+        </div>
+        <div>
+          <div class="joined">${m.note ? escapeHtml(m.note)+' · ' : ''}เข้าร่วม ${m.date}</div>
+          <div class="rank-controls admin-only">
           <label>ลำดับ</label>
           <input type="number" class="rank-input" min="1" max="${sorted.length}" value="${idx+1}"
             onchange="setMemberRank('${m.id}', this.value)">
@@ -1529,6 +1908,499 @@ async function deleteAnnounce(id){
   await logAction(`ลบประกาศ: ${target ? target.title : id}`);
 }
 
+// ---------- RULES ----------
+function renderRules(){
+  const list = document.getElementById('ruleList');
+  if(!list) return;
+  if(rulesList.length===0){ list.innerHTML = '<div class="empty"><span class="icon">📜</span>ยังไม่มีกฏระเบียบ</div>'; return; }
+  const sorted = [...rulesList].sort((a,b)=> b.ts - a.ts);
+  list.innerHTML = sorted.map(r=>`
+    <div class="row-item">
+      <div>
+        <div style="font-weight:700; color:var(--gold-soft);">${escapeHtml(r.title)}</div>
+        <div class="meta">${escapeHtml(r.content)}</div>
+        <div class="meta">${r.date}</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        ${isAdmin()?`<button class="ghost" onclick="deleteRule('${r.id}')">ลบ</button>`:''}
+      </div>
+    </div>
+  `).join('');
+}
+
+async function addRule(){
+  if(!isAdmin()){ alert('บัญชีนี้ไม่มีสิทธิ์เพิ่มกฏ'); return; }
+  const title = document.getElementById('ruleTitle').value.trim();
+  const content = document.getElementById('ruleContent').value.trim();
+  if(!title || !content){ alert('กรอกหัวข้อและรายละเอียด'); return; }
+  rulesList.push({ id: uid(), title, content, date: nowStr(), ts: Date.now() });
+  document.getElementById('ruleTitle').value = '';
+  document.getElementById('ruleContent').value = '';
+  renderRules();
+  await saveKey(KEYS.rules, rulesList);
+  await logAction(`เพิ่มกฏระเบียบ: ${title}`);
+}
+
+async function deleteRule(id){
+  if(!isAdmin()){ alert('บัญชีนี้ไม่มีสิทธิ์ลบกฏ'); return; }
+  const r = rulesList.find(x=>x.id===id);
+  rulesList = rulesList.filter(x=>x.id!==id);
+  renderRules();
+  await saveKey(KEYS.rules, rulesList);
+  await logAction(`ลบกฏระเบียบ: ${r ? r.title : id}`);
+}
+
+// ---------- ACTIVITIES ----------
+function renderActivities(type='sell'){
+  type = type || currentActivityView;
+  currentActivityView = type;
+  // update button active states in panel
+  ['sell','airdrop','box'].forEach(k=>{
+    const b = document.getElementById('actBtn-'+k);
+    if(b) b.classList.toggle('active', k===type);
+  });
+  // target per-subtopic list element
+  const list = document.getElementById('activityList-'+type) || document.getElementById('activityList');
+  if(!list) return;
+  const arr = (activities && activities[type]) ? activities[type] : [];
+  if(arr.length===0){ list.innerHTML = '<div class="empty"><span class="icon">🎯</span>ยังไม่มีรายการกิจกรรม</div>'; return; }
+  const sorted = [...arr].sort((a,b)=> b.ts - a.ts);
+  list.innerHTML = sorted.map(a=>`
+    <div class="row-item">
+      <div>
+        <div style="font-weight:700; color:var(--gold-soft);">${escapeHtml(a.title)}</div>
+        <div class="meta">${a.date}</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        ${isAdmin()?`<button class="ghost" onclick="deleteActivity('${type}','${a.id}')">ลบ</button>`:''}
+      </div>
+    </div>
+  `).join('');
+}
+
+async function addActivity(){
+  // Backward-compatible: if generic panel used
+  const type = currentActivityView || 'sell';
+  const titleEl = document.getElementById('actTitle') || document.getElementById('actTitle-'+type);
+  const title = titleEl ? titleEl.value.trim() : '';
+  if(!title){ alert('กรอกชื่อกิจกรรม'); return; }
+  if(!activities[type]) activities[type]=[];
+  activities[type].push({ id: uid(), title, date: nowStr(), ts: Date.now() });
+  if(titleEl) titleEl.value='';
+  renderActivities(type);
+  await saveKey(KEYS.activities, activities);
+  await logAction(`เพิ่มกิจกรรม (${type}): ${title}`);
+}
+
+async function addActivityFor(type){
+  const el = document.getElementById('actTitle-'+type);
+  const title = el ? el.value.trim() : '';
+  if(!title){ alert('กรอกชื่อกิจกรรม'); return; }
+  if(!activities[type]) activities[type]=[];
+  activities[type].push({ id: uid(), title, date: nowStr(), ts: Date.now() });
+  if(el) el.value='';
+  renderActivities(type);
+  await saveKey(KEYS.activities, activities);
+  await logAction(`เพิ่มกิจกรรม (${type}): ${title}`);
+}
+
+async function deleteActivity(type,id){
+  if(!isAdmin()){ alert('บัญชีนี้ไม่มีสิทธิ์ลบกิจกรรม'); return; }
+  if(!activities[type]) return;
+  const a = activities[type].find(x=>x.id===id);
+  activities[type] = activities[type].filter(x=>x.id!==id);
+  renderActivities(type || currentActivityView);
+  await saveKey(KEYS.activities, activities);
+  await logAction(`ลบกิจกรรม (${type}): ${a ? a.title : id}`);
+}
+
+// ---------- WORK (งานดำ) ----------
+function renderWork(type='steal'){
+  type = type || currentWorkView;
+  currentWorkView = type;
+  ['steal','sellDrug'].forEach(k=>{
+    const b = document.getElementById('workBtn-'+k);
+    if(b) b.classList.toggle('active', k===type);
+  });
+  const list = document.getElementById('workList-'+type) || document.getElementById('workList');
+  if(!list) return;
+  const arr = (workRecords && workRecords[type]) ? workRecords[type] : [];
+  if(arr.length===0){ list.innerHTML = '<div class="empty"><span class="icon">🖤</span>ยังไม่มีรายการงานดำ</div>'; return; }
+  const sorted = [...arr].sort((a,b)=> b.ts - a.ts);
+  list.innerHTML = sorted.map(w=>`
+    <div class="row-item">
+      <div>
+        <div style="font-weight:700; color:var(--gold-soft);">${escapeHtml(w.title)}</div>
+        <div class="meta">${w.date}</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        ${isAdmin()?`<button class="ghost" onclick="deleteWork('${type}','${w.id}')">ลบ</button>`:''}
+      </div>
+    </div>
+  `).join('');
+}
+
+async function addWork(){
+  const type = currentWorkView || 'steal';
+  const titleEl = document.getElementById('workTitle') || document.getElementById('workTitle-'+type);
+  const title = titleEl ? titleEl.value.trim() : '';
+  if(!title){ alert('กรอกรายละเอียดงาน'); return; }
+  if(!workRecords[type]) workRecords[type]=[];
+  workRecords[type].push({ id: uid(), title, date: nowStr(), ts: Date.now() });
+  if(titleEl) titleEl.value='';
+  renderWork(type);
+  await saveKey(KEYS.work, workRecords);
+  await logAction(`เพิ่มงานดำ (${type}): ${title}`);
+}
+
+async function addWorkFor(type){
+  const el = document.getElementById('workTitle-'+type);
+  const title = el ? el.value.trim() : '';
+  if(!title){ alert('กรอกรายละเอียดงาน'); return; }
+  if(!workRecords[type]) workRecords[type]=[];
+  workRecords[type].push({ id: uid(), title, date: nowStr(), ts: Date.now() });
+  if(el) el.value='';
+  renderWork(type);
+  await saveKey(KEYS.work, workRecords);
+  await logAction(`เพิ่มงานดำ (${type}): ${title}`);
+}
+
+async function deleteWork(type,id){
+  if(!isAdmin()){ alert('บัญชีนี้ไม่มีสิทธิ์ลบงาน'); return; }
+  if(!workRecords[type]) return;
+  const w = workRecords[type].find(x=>x.id===id);
+  workRecords[type] = workRecords[type].filter(x=>x.id!==id);
+  renderWork(type || currentWorkView);
+  await saveKey(KEYS.work, workRecords);
+  await logAction(`ลบงานดำ (${type}): ${w ? w.title : id}`);
+}
+
+// ---------- POINTS ----------
+function renderPoints(){
+  const summaryEl = document.getElementById('pointsSummary');
+  const list = document.getElementById('pointsList');
+  if(summaryEl){
+    if(members.length === 0){
+      summaryEl.innerHTML = '<div class="empty"><span class="icon">👥</span>ยังไม่มีสมาชิก</div>';
+    } else {
+      const totals = {};
+      members.forEach(m => {
+        totals[m.id] = { memberId: m.id, name: m.name, total: 0, count: 0, lastTs: 0, lastDate: 'ยังไม่มีการให้แต้ม' };
+      });
+      pointsList.forEach(p => {
+        if(!totals[p.memberId]){
+          totals[p.memberId] = { memberId: p.memberId, name: memberName(p.memberId), total: 0, count: 0, lastTs: 0, lastDate: 'ยังไม่มีการให้แต้ม' };
+        }
+        const entry = totals[p.memberId];
+        entry.total += p.points;
+        entry.count += 1;
+        if(p.ts > entry.lastTs){
+          entry.lastTs = p.ts;
+          entry.lastDate = p.date;
+        }
+      });
+      const summary = Object.values(totals).sort((a,b) => b.total - a.total || a.name.localeCompare(b.name));
+      const totalPoints = summary.reduce((sum,item) => sum + item.total, 0);
+      summaryEl.innerHTML = summary.map(s => `
+        <div class="points-card">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+            <div>
+              <div style="font-weight:700;color:var(--ink);">${escapeHtml(s.name)}</div>
+              <div class="meta">${s.count} รายการ · ${escapeHtml(s.lastDate)}</div>
+            </div>
+            <div class="score">${fmt(s.total)}</div>
+          </div>
+        </div>
+      `).join('');
+      if(summary.length === 0){
+        summaryEl.innerHTML = '<div class="empty"><span class="icon">⭐</span>ยังไม่มีแต้มสะสม</div>';
+      }
+    }
+  }
+  if(!list) return;
+  if(pointsList.length===0){
+    list.innerHTML = '<div class="empty"><span class="icon">⭐</span>ยังไม่มีแต้มสะสม</div>';
+    return;
+  }
+  const sorted = [...pointsList].sort((a,b)=> b.ts - a.ts);
+  list.innerHTML = sorted.map(p=>`
+    <div class="row-item">
+      <div>
+        <div style="font-weight:700; color:var(--gold-soft);">${escapeHtml(memberName(p.memberId))} · ${p.points} แต้ม</div>
+        <div class="meta">${p.date}</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        ${isAdmin()?`<button class="ghost" onclick="deletePoints('${p.id}')">ลบ</button>`:''}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ----- Activity / Work perform helpers -----
+function populateActivityForm(type){
+  const memberSel = document.getElementById('actMember-'+type);
+  const itemsDiv = document.getElementById('actItems-'+type);
+  if(memberSel){
+    memberSel.innerHTML = members.map(m=>`<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
+  }
+  if(!itemsDiv) return;
+  // Different rendering per activity type
+  if(type === 'sell'){
+    itemsDiv.innerHTML = '<div class="hint">ใช้ฟิลด์ "จำนวนเงินแดงที่ได้รับ" ด้านบน</div>';
+    return;
+  }
+  // airdrop / box: show inventory with thumbnails
+  itemsDiv.classList.remove('act-items-list');
+  itemsDiv.classList.add('act-items-grid');
+  itemsDiv.innerHTML = inventory.map(it => `
+    <div class="act-item-card">
+      <div class="act-item-start">
+        <input type="checkbox" name="actItem-${type}" value="${it.id}">
+        <div class="act-thumb">
+          ${it.image?`<img src="${it.image}">`:'<div class="noimg">🎒</div>'}
+        </div>
+      </div>
+      <div class="act-info">
+        <div class="iname">${escapeHtml(it.name)}</div>
+        <div class="meta">คงเหลือ: ${fmt(it.qty)}</div>
+      </div>
+      <input type="number" min="1" placeholder="จำนวน" id="actItemQty-${type}-${it.id}" class="act-item-qty">
+    </div>
+  `).join('');
+}
+
+async function findOrCreateItemByName(name){
+  const key = (name||'').trim();
+  if(!key) return null;
+  let it = inventory.find(x=> (x.name||'').toLowerCase() === key.toLowerCase());
+  if(it) return it.id;
+  // try contains
+  it = inventory.find(x=> (x.name||'').toLowerCase().includes(key.toLowerCase()));
+  if(it) return it.id;
+  // create
+  const newItem = { id: uid(), name: key, category: 'งานขาว', qty: 0, note: '(auto)', image: null, ts: Date.now() };
+  inventory.push(newItem);
+  await saveKey(KEYS.items, inventory);
+  renderItems();
+  await logAction(`สร้างไอเทมอัตโนมัติ: ${newItem.name}`);
+  return newItem.id;
+}
+
+async function performActivity(type){
+  const sel = document.getElementById('actMember-'+type);
+  const memberIds = sel ? [...sel.selectedOptions].map(o=>o.value).filter(Boolean) : [];
+  const location = document.getElementById('actLocation-'+type).value.trim();
+  if(memberIds.length===0){ alert('เลือกสมาชิกอย่างน้อยหนึ่งคน'); return; }
+  let items = [];
+  if(type === 'sell'){
+    const money = parseInt((document.getElementById('actMoney-sell')||{value:0}).value) || 0;
+    if(money <= 0){ alert('กรอกจำนวนเงินแดงที่ได้รับ'); return; }
+    const moneyId = await findOrCreateItemByName('เงินแดง');
+    if(moneyId) items.push({ itemId: moneyId, qty: money });
+  } else {
+    const checked = [...document.querySelectorAll(`input[name="actItem-${type}"]:checked`)];
+    items = checked.map(ch => ({ itemId: ch.value, qty: parseInt((document.getElementById(`actItemQty-${type}-${ch.value}`)||{value:1}).value) || 1 }));
+    if(items.length===0){ alert('เลือกของที่ได้'); return; }
+  }
+  const videoFile = document.getElementById('actVideo-'+type) ? document.getElementById('actVideo-'+type).files[0] : null;
+  let videoData = null;
+  if(videoFile){ videoData = await new Promise((res,rej)=>{ const r = new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(videoFile); }); }
+  const rec = { id: uid(), memberIds, location, items, video: videoData, date: nowStr(), ts: Date.now() };
+  if(!performedActivities[type]) performedActivities[type]=[];
+  performedActivities[type].push(rec);
+  // update inventory: add produced items
+  items.forEach(itm => {
+    const inv = inventory.find(x=>x.id===itm.itemId);
+    if(inv){ inv.qty = (parseInt(inv.qty)||0) + (parseInt(itm.qty)||0); }
+  });
+  await saveKey(KEYS.items, inventory);
+  await saveKey(KEYS.activityRecords, performedActivities);
+  await logAction(`บันทึกกิจกรรม (${type}): by ${memberIds.map(id=>memberName(id)).join(', ')} at ${location}`);
+  renderItems();
+  renderPerformedActivities(type);
+  // clear form
+  document.getElementById('actLocation-'+type).value='';
+  if(type==='sell') document.getElementById('actMoney-sell').value='';
+  if(document.getElementById('actVideo-'+type)) document.getElementById('actVideo-'+type).value='';
+  [...document.querySelectorAll(`input[name="actItem-${type}"]`)].forEach(cb=>{ cb.checked=false; const q = document.getElementById(`actItemQty-${type}-${cb.value}`); if(q) q.value=''; });
+}
+
+function renderPerformedActivities(type){
+  const list = document.getElementById('activityPerformedList-'+type);
+  if(!list) return;
+  const arr = (performedActivities && performedActivities[type]) ? performedActivities[type] : [];
+  if(arr.length===0){ list.innerHTML = '<div class="empty"><span class="icon">🎯</span>ยังไม่มีการบันทึกกิจกรรม</div>'; return; }
+  const sorted = [...arr].sort((a,b)=> b.ts - a.ts);
+  list.innerHTML = sorted.map(r=>{
+    const itemsText = (r.items||[]).map(i=>`${escapeHtml(itemName(i.itemId))} x${i.qty}`).join(' · ');
+    const vid = r.video ? `<a href="${r.video}" target="_blank" class="ghost">ดู VDO</a>` : '';
+    const mems = (r.memberIds||[]).map(id=>escapeHtml(memberName(id))).join(', ');
+    return `
+    <div class="row-item">
+      <div>
+        <div style="font-weight:700;">${mems} · ${escapeHtml(r.location)}</div>
+        <div class="meta">${itemsText}</div>
+        <div class="meta">${r.date}</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">${vid}</div>
+    </div>`;
+  }).join('');
+}
+
+function populateWorkForm(type){
+  const memberSel = document.getElementById('workMember-'+type);
+  if(memberSel){
+    memberSel.innerHTML = '<option value="">— เลือกสมาชิก —</option>' + members.map(m=>`<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
+  }
+  // other work types use dedicated inputs in HTML (pun/lic or money)
+}
+
+async function performWork(type){
+  const memberId = document.getElementById('workMember-'+type).value;
+  const location = document.getElementById('workLocation-'+type).value.trim();
+  if(!memberId){ alert('เลือกสมาชิก'); return; }
+  let items = [];
+  if(type === 'steal'){
+    const pun = parseInt((document.getElementById('workItem-pun-steal')||{value:0}).value) || 0;
+    const lic = parseInt((document.getElementById('workItem-lic-steal')||{value:0}).value) || 0;
+    if(pun>0){ const id = await findOrCreateItemByName('ปูน'); if(id) items.push({ itemId: id, qty: pun }); }
+    if(lic>0){ const id2 = await findOrCreateItemByName('ลิค'); if(id2) items.push({ itemId: id2, qty: lic }); }
+  } else if(type === 'sellDrug'){
+    const money = parseInt((document.getElementById('workMoney-sellDrug')||{value:0}).value) || 0;
+    if(money>0){ const id = await findOrCreateItemByName('เงินแดง'); if(id) items.push({ itemId: id, qty: money }); }
+  } else {
+    const checked = [...document.querySelectorAll(`input[name="workItem-${type}"]:checked`)];
+    items = checked.map(ch => ({ itemId: ch.value, qty: parseInt((document.getElementById(`workItemQty-${type}-${ch.value}`)||{value:1}).value) || 1 }));
+  }
+  const rec = { id: uid(), memberId, location, items, date: nowStr(), ts: Date.now() };
+  if(!performedWork[type]) performedWork[type]=[];
+  performedWork[type].push(rec);
+  // update inventory
+  items.forEach(itm => { const inv = inventory.find(x=>x.id===itm.itemId); if(inv){ inv.qty = (parseInt(inv.qty)||0) + (parseInt(itm.qty)||0); } });
+  await saveKey(KEYS.items, inventory);
+  await saveKey(KEYS.workRecordsPerformed, performedWork);
+  await logAction(`บันทึกงานดำ (${type}): by ${memberName(memberId)} at ${location}`);
+  renderItems();
+  renderPerformedWork(type);
+  document.getElementById('workLocation-'+type).value='';
+  if(type === 'steal'){ document.getElementById('workItem-pun-steal').value=''; document.getElementById('workItem-lic-steal').value=''; }
+  if(type === 'sellDrug'){ document.getElementById('workMoney-sellDrug').value=''; }
+}
+
+function renderPerformedWork(type){
+  const list = document.getElementById('workPerformedList-'+type);
+  if(!list) return;
+  const arr = (performedWork && performedWork[type]) ? performedWork[type] : [];
+  if(arr.length===0){ list.innerHTML = '<div class="empty"><span class="icon">🖤</span>ยังไม่มีการบันทึกงาน</div>'; return; }
+  const sorted = [...arr].sort((a,b)=> b.ts - a.ts);
+  list.innerHTML = sorted.map(r=>{
+    const itemsText = (r.items||[]).map(i=>`${escapeHtml(itemName(i.itemId))} x${i.qty}`).join(' · ');
+    return `
+    <div class="row-item">
+      <div>
+        <div style="font-weight:700;">${escapeHtml(memberName(r.memberId))} · ${escapeHtml(r.location)}</div>
+        <div class="meta">${itemsText}</div>
+        <div class="meta">${r.date}</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;"></div>
+    </div>`;
+  }).join('');
+}
+
+// UI helpers to switch sub-views
+function setActivityView(type){
+  currentActivityView = type;
+  // switch to dedicated panel for this activity
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  // ensure activities tab is active in nav
+  const actNav = document.querySelector('nav.tabs button[data-tab="activities"]');
+  if(actNav) actNav.classList.add('active');
+  const panel = document.getElementById('panel-activities-'+type);
+  if(panel) panel.classList.add('active');
+  renderActivities(type);
+  populateActivityForm(type);
+  renderPerformedActivities(type);
+}
+
+function setWorkView(type){
+  currentWorkView = type;
+  // switch to dedicated panel
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  const workNav = document.querySelector('nav.tabs button[data-tab="work"]');
+  if(workNav) workNav.classList.add('active');
+  const panel = document.getElementById('panel-work-'+type);
+  if(panel) panel.classList.add('active');
+  renderWork(type);
+  populateWorkForm(type);
+  renderPerformedWork(type);
+}
+
+// Create hover submenus for nav buttons
+function createNavSubmenus(){
+  const maps = {
+    activities: [ ['sell','ขายสาร'], ['airdrop','แอร์ดรอป'], ['box','กล่องพิเศษ'] ],
+    work: [ ['steal','จกปูน/ลิค'], ['sellDrug','ขายยา'] ]
+  };
+  Object.keys(maps).forEach(tab=>{
+    const btn = document.querySelector(`nav.tabs button[data-tab="${tab}"]`);
+    if(!btn) return;
+    let popup = null;
+    let hideTimer = null;
+    const show = ()=>{
+      if(popup) return;
+      popup = document.createElement('div'); popup.className='nav-submenu';
+      maps[tab].forEach(([k,label])=>{
+        const b = document.createElement('button'); b.textContent = label;
+        b.addEventListener('click', ()=>{
+          // activate tab
+          document.querySelectorAll('nav.tabs button').forEach(bx=>bx.classList.remove('active'));
+          btn.classList.add('active');
+          document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+          document.getElementById('panel-'+tab).classList.add('active');
+          // render specific subview
+          if(tab==='activities') setActivityView(k);
+          if(tab==='work') setWorkView(k);
+          remove();
+        });
+        popup.appendChild(b);
+      });
+      document.body.appendChild(popup);
+      const r = btn.getBoundingClientRect();
+      popup.style.left = (r.left + window.scrollX) + 'px';
+      popup.style.top = (r.bottom + window.scrollY + 8) + 'px';
+      // ensure forms are populated when showing submenu
+      if(tab==='activities') maps[tab].forEach(([k])=>{});
+      popup.addEventListener('mouseenter', ()=>{ if(hideTimer){ clearTimeout(hideTimer); hideTimer=null; } });
+      popup.addEventListener('mouseleave', ()=>{ hideTimer = setTimeout(remove, 150); });
+    };
+    const remove = ()=>{ if(popup){ popup.remove(); popup=null; } };
+    btn.addEventListener('mouseenter', ()=>{ if(hideTimer){ clearTimeout(hideTimer); hideTimer=null; } show(); });
+    btn.addEventListener('mouseleave', ()=>{ hideTimer = setTimeout(remove, 150); });
+  });
+}
+
+async function addPoints(){
+  const memberId = document.getElementById('pointsMember').value;
+  const pts = parseInt(document.getElementById('pointsValue').value) || 0;
+  if(!memberId || pts===0){ alert('เลือกสมาชิกและระบุจำนวนแต้ม'); return; }
+  pointsList.push({ id: uid(), memberId, points: pts, date: nowStr(), ts: Date.now() });
+  document.getElementById('pointsValue').value='0';
+  renderPoints();
+  await saveKey(KEYS.points, pointsList);
+  await logAction(`ให้แต้ม ${pts} แก่ ${memberName(memberId)}`);
+}
+
+async function deletePoints(id){
+  if(!isAdmin()){ alert('บัญชีนี้ไม่มีสิทธิ์ลบแต้ม'); return; }
+  const p = pointsList.find(x=>x.id===id);
+  pointsList = pointsList.filter(x=>x.id!==id);
+  renderPoints();
+  await saveKey(KEYS.points, pointsList);
+  await logAction(`ลบแต้ม: ${p ? (p.points+' ของ '+memberName(p.memberId)) : id}`);
+}
+
 // ---------- ITEMS / MENU ----------
 function renderItemSelects(){
   const opts = '<option value="">— เลือกของในคลัง —</option>' +
@@ -1552,18 +2424,18 @@ function renderItemSelects(){
 
 function itemCardHtml(it){
   return `
-      <div class="item-card">
+      <div class="item-card" onclick="startEditItem('${it.id}')" title="คลิกเพื่อแก้ไขรายการ">
         <div class="item-thumb">
           ${it.image ? `<img src="${it.image}">` : `<span class="noimg">🎒</span>`}
           <span class="stock-badge ${it.qty<=0?'low':''}">คงเหลือ ${it.qty}</span>
         </div>
         <div class="item-body">
           <div class="iname">${escapeHtml(it.name)}</div>
-          ${it.note ? `<div class="inote">${escapeHtml(it.note)}</div>` : ''}
+          ${it.note ? `<div class="inote">${escapeHtml(it.note)}</div>` : '<div class="inote">ไม่มีคำอธิบาย</div>'}
           <div class="item-actions admin-only">
             <input type="number" min="0" class="qty-input" id="qtyInput-${it.id}" value="${it.qty}">
-            <button class="ghost" onclick="updateStock('${it.id}')">อัปเดต</button>
-            <button class="ghost" onclick="deleteItem('${it.id}')">ลบ</button>
+            <button class="ghost" onclick="event.stopPropagation(); updateStock('${it.id}')">อัปเดต</button>
+            <button class="ghost" onclick="event.stopPropagation(); deleteItem('${it.id}')">ลบ</button>
           </div>
         </div>
       </div>`;
@@ -1598,37 +2470,77 @@ function renderItems(){
 }
 
 async function addItem(){
-  if(!isAdmin()){ alert('บัญชีนี้ไม่มีสิทธิ์เพิ่มของเข้าคลัง'); return; }
+  if(!isAdmin()){ alert('บัญชีนี้ไม่มีสิทธิ์เพิ่มหรือแก้ไขของเข้าคลัง'); return; }
   const name = document.getElementById('itemName').value.trim();
   const category = document.getElementById('itemCategory').value.trim();
   const qty = parseInt(document.getElementById('itemQty').value) || 0;
   const note = document.getElementById('itemNote').value.trim();
   if(!name){ alert('กรอกชื่อของ'); return; }
 
-  // ตรวจสอบว่ามีของชื่อนี้และหมวดหมู่เดียวกันอยู่แล้วหรือไม่
-  const existing = inventory.find(it => it.name.toLowerCase() === name.toLowerCase() && it.category === category);
-
-  if (existing) {
-    // ถ้ามีอยู่แล้ว ให้เพิ่มจำนวนเข้าไป (สอดคล้องกับระบบส่งของ)
-    const oldQty = existing.qty;
-    existing.qty += qty;
-    if (note) existing.note = note;
-    if (pendingItemImage) existing.image = pendingItemImage;
-    await logAction(`เพิ่มจำนวนของที่มีอยู่แล้ว: ${name} เพิ่มอีก ${qty} (จาก ${oldQty} เป็น ${existing.qty})`);
+  if(editingItemId){
+    const it = inventory.find(x=> x.id === editingItemId);
+    if(!it){ alert('พบข้อผิดพลาด: ไม่พบไอเทมที่ต้องการแก้ไข'); editingItemId = null; resetItemForm(); renderItems(); return; }
+    const oldQty = it.qty;
+    it.name = name;
+    it.category = category;
+    it.qty = qty;
+    it.note = note;
+    if(pendingItemImage) it.image = pendingItemImage;
+    it.ts = Date.now();
+    await logAction(`แก้ไขเมนูของ: ${name} (จำนวน ${oldQty} → ${qty})`);
+    editingItemId = null;
   } else {
-    // ถ้ายังไม่มี ให้เพิ่มเป็นรายการใหม่
-    inventory.push({ id: uid(), name, category, qty, note, image: pendingItemImage, date: nowStr(), ts: Date.now() });
-    await logAction(`เพิ่มของใหม่เข้าคลัง: ${name} จำนวน ${qty}`);
+    const existing = inventory.find(it => it.name.toLowerCase() === name.toLowerCase() && it.category === category);
+    if (existing) {
+      const oldQty = existing.qty;
+      existing.qty += qty;
+      if (note) existing.note = note;
+      if (pendingItemImage) existing.image = pendingItemImage;
+      await logAction(`เพิ่มจำนวนของที่มีอยู่แล้ว: ${name} เพิ่มอีก ${qty} (จาก ${oldQty} เป็น ${existing.qty})`);
+    } else {
+      inventory.push({ id: uid(), name, category, qty, note, image: pendingItemImage, date: nowStr(), ts: Date.now() });
+      await logAction(`เพิ่มของใหม่เข้าคลัง: ${name} จำนวน ${qty}`);
+    }
   }
 
+  resetItemForm();
+  renderItems();
+  await saveKey(KEYS.items, inventory);
+}
+
+function resetItemForm(){
   document.getElementById('itemName').value='';
   document.getElementById('itemCategory').value='งานดำ';
   document.getElementById('itemQty').value='0';
   document.getElementById('itemNote').value='';
   document.getElementById('itemUploadBox').innerHTML = `📷 อัปโหลดรูป<input type="file" accept="image/*" id="itemImage" onchange="previewItemImage(event)">`;
   pendingItemImage = null;
-  renderItems();
-  await saveKey(KEYS.items, inventory);
+  document.getElementById('itemFormTitle').textContent = 'เพิ่มของเข้าคลัง';
+  document.getElementById('itemSaveButton').textContent = 'เพิ่มของเข้าคลัง';
+  document.getElementById('itemCancelButton').style.display = 'none';
+}
+
+function startEditItem(id){
+  if(!isAdmin()){ return; }
+  const it = inventory.find(x=> x.id === id);
+  if(!it) return;
+  editingItemId = id;
+  document.getElementById('itemName').value = it.name;
+  document.getElementById('itemCategory').value = it.category;
+  document.getElementById('itemQty').value = it.qty;
+  document.getElementById('itemNote').value = it.note || '';
+  if(it.image){
+    pendingItemImage = it.image;
+    document.getElementById('itemUploadBox').innerHTML = `<img class="upload-preview" src="${it.image}"><input type="file" accept="image/*" id="itemImage" onchange="previewItemImage(event)"><div style="margin-top:6px;color:var(--ink-dim);font-size:12px;">คลิกเพื่อเปลี่ยนรูป</div>`;
+  }
+  document.getElementById('itemFormTitle').textContent = 'แก้ไขเมนูของ';
+  document.getElementById('itemSaveButton').textContent = 'บันทึกการแก้ไข';
+  document.getElementById('itemCancelButton').style.display = 'inline-flex';
+}
+
+function cancelEditItem(){
+  editingItemId = null;
+  resetItemForm();
 }
 async function updateStock(id){
   if(!isAdmin()){ alert('บัญชีนี้ไม่มีสิทธิ์แก้จำนวนของ'); return; }
@@ -1769,6 +2681,7 @@ function renderDelivery(){
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0;">
         ${d.status!=='received'?`<button class="ghost" onclick="markDeliveryReceived('${d.id}')" style="padding:5px 10px;font-size:12px;">✓ ตรวจรับแล้ว</button>`:``}
+        ${currentRole==='admin'?`<button class="ghost" onclick="startEditDelivery('${d.id}')" style="padding:5px 10px;font-size:12px;">อัปเดต</button>`:''}
         ${currentRole==='admin'?`<button class="ghost" style="color:#e8828d;padding:5px 10px;font-size:12px;" onclick="deleteDelivery('${d.id}')">ลบ</button>`:''}
       </div>
     </div>
@@ -1785,6 +2698,11 @@ async function addDelivery(){
   if(!itemId){ alert('เลือกชื่อของ'); return; }
   if(!qty || qty<=0){ alert('กรอกจำนวนให้ถูกต้อง'); return; }
   if(!senderId){ alert('เลือกชื่อผู้ส่ง'); return; }
+  // If currently editing an existing delivery, update instead of creating new
+  if(editingDeliveryId){
+    await updateDelivery(editingDeliveryId);
+    return;
+  }
   
   const it = inventory.find(x=>x.id===itemId);
   if(!it){ alert('ไม่พบข้อมูลของในคลัง'); return; }
@@ -1824,6 +2742,63 @@ async function deleteDelivery(id){
   await saveKey(KEYS.delivery, deliveryRecords);
   await saveKey(KEYS.items, inventory);
   await logAction(`ลบรายการส่ง: ${d ? itemName(d.itemId)+' x'+d.qty : id}`);
+}
+
+// ---------- DELIVERY: Edit / Update ----------
+function startEditDelivery(id){
+  const d = deliveryRecords.find(r=>r.id===id);
+  if(!d) return;
+  // Only admin allowed to edit in this implementation
+  if(!isAdmin()){ alert('บัญชีนี้ไม่มีสิทธิ์แก้ไขรายการส่ง'); return; }
+  document.getElementById('dvItem').value = d.itemId;
+  document.getElementById('dvQty').value = d.qty;
+  document.getElementById('dvSender').value = d.senderId;
+  document.getElementById('dvStatus').value = d.status || 'pending';
+  document.getElementById('dvNote').value = d.note || '';
+  editingDeliveryId = id;
+  const btn = document.querySelector('#panel-delivery .primary');
+  if(btn) btn.textContent = 'อัปเดตการส่ง';
+}
+
+async function updateDelivery(id){
+  const d = deliveryRecords.find(r=>r.id===id);
+  if(!d) return;
+  if(!isAdmin()){ alert('บัญชีนี้ไม่มีสิทธิ์แก้ไขรายการส่ง'); return; }
+  const itemId = document.getElementById('dvItem').value;
+  const newQty = parseInt(document.getElementById('dvQty').value) || 0;
+  const senderId = document.getElementById('dvSender').value;
+  const status = document.getElementById('dvStatus').value;
+  const note = document.getElementById('dvNote').value.trim();
+  if(!itemId || !senderId || newQty<=0){ alert('กรอกข้อมูลให้ครบถ้วน'); return; }
+
+  const it = inventory.find(x=>x.id===itemId);
+  if(!it){ alert('ไม่พบของในคลัง'); return; }
+
+  const oldQty = d.qty;
+  const diff = newQty - oldQty;
+  // apply quantity difference to inventory
+  it.qty += diff;
+
+  d.itemId = itemId;
+  d.qty = newQty;
+  d.senderId = senderId;
+  d.status = status;
+  d.note = note;
+  d.ts = Date.now();
+  d.date = nowStr();
+
+  // reset form and state
+  editingDeliveryId = null;
+  const btn = document.querySelector('#panel-delivery .primary');
+  if(btn) btn.textContent = 'บันทึกการส่งเข้า';
+  document.getElementById('dvQty').value='1';
+  document.getElementById('dvNote').value='';
+
+  renderDelivery();
+  renderItems();
+  await saveKey(KEYS.delivery, deliveryRecords);
+  await saveKey(KEYS.items, inventory);
+  await logAction(`อัปเดตรายการส่ง: ${itemName(itemId)} x${newQty} (จาก ${oldQty})`);
 }
 
 </script>
