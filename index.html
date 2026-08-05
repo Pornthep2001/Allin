@@ -643,6 +643,7 @@
                 <button class="ghost" id="actBtn-sell" onclick="setActivityView('sell')">ขายสาร</button>
                 <button class="ghost" id="actBtn-airdrop" onclick="setActivityView('airdrop')">แอร์ดรอป</button>
                 <button class="ghost" id="actBtn-box" onclick="setActivityView('box')">กล่องพิเศษ</button>
+                <button class="ghost" id="actBtn-car" onclick="setActivityView('car')">รถ 100 โล</button>
               </div>
             </div>
         <div class="field">
@@ -697,6 +698,39 @@
           <div class="list" id="activityList-sell"></div>
           <h3 style="margin-top:12px;color:var(--gold-soft);">ประวัติการเล่น ขายสาร</h3>
           <div class="list" id="activityPerformedList-sell"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-activities-car">
+      <div class="card">
+        <h2>กิจกรรม — รถ 100 โล</h2>
+          <div class="form-grid">
+            <div class="field" style="grid-column:1/3;">
+              <label>สมาชิก (เลือกได้หลายคน)</label>
+              <select id="actMember-car" multiple size="4"></select>
+            </div>
+            <div class="field" style="grid-column:3/-1;">
+              <label>จุดที่ไป / เส้นทาง</label>
+              <input type="text" id="actLocation-car" placeholder="เช่น เส้นทาง A-B">
+            </div>
+            <div class="field" style="grid-column:1/-1;">
+              <label>คำอธิบาย</label>
+              <input type="text" id="actNote-car" placeholder="เช่น จัดรถ 100 โล สำเร็จ">
+            </div>
+            <div class="field" style="grid-column:1/-1;">
+              <label>แนบ VDO การเล่น (ถ้ามี)</label>
+              <input type="file" accept="video/*" id="actVideo-car">
+            </div>
+          </div>
+          <div class="actions">
+            <button class="primary" onclick="performActivity('car')">บันทึก (รถ 100 โล)</button>
+          </div>
+      </div>
+      <div class="card">
+        <h2>รายการ รถ 100 โล</h2>
+          <div class="list" id="activityList-car"></div>
+          <h3 style="margin-top:12px;color:var(--gold-soft);">ประวัติการเล่น รถ 100 โล</h3>
+          <div class="list" id="activityPerformedList-car"></div>
       </div>
     </section>
 
@@ -1645,11 +1679,11 @@ async function loadAll(){
   renderDelivery();
   renderRules();
   // render all activity/work sub-views so lists are populated
-  ['sell','airdrop','box'].forEach(t=>renderActivities(t));
+  ['sell','airdrop','box','car'].forEach(t=>renderActivities(t));
   ['steal','sellDrug'].forEach(t=>renderWork(t));
   renderPoints();
   // render performed activity/work records
-  ['sell','airdrop','box'].forEach(t=>renderPerformedActivities(t));
+  ['sell','airdrop','box','car'].forEach(t=>renderPerformedActivities(t));
   ['steal','sellDrug'].forEach(t=>renderPerformedWork(t));
   renderStory();
   renderAccounts();
@@ -1997,17 +2031,39 @@ function renderFund(){
   }
   const sorted = [...fundEntries].sort((a,b)=> b.ts - a.ts);
   list.innerHTML = sorted.map(e=>`
-    <div class="row-item">
+    <div class="row-item" ${isAdmin()?`onclick="editFund('${e.id}')"`:''}>
       <div>
         <div><strong>${escapeHtml(memberName(e.memberId))}</strong> ${e.note? '· '+escapeHtml(e.note):''}</div>
         <div class="meta">${e.date}</div>
       </div>
       <div style="display:flex;align-items:center;gap:12px;">
         <div class="amt ${e.type==='in'?'plus':'minus'}">${e.type==='in'?'+':'-'}${fmt(e.amount)}</div>
-        <button class="ghost admin-only" onclick="deleteFund('${e.id}')">ลบ</button>
+        <button class="ghost admin-only" onclick="event.stopPropagation(); deleteFund('${e.id}')">ลบ</button>
       </div>
     </div>
   `).join('');
+}
+
+async function editFund(id){
+  if(!isAdmin()){ alert('เฉพาะผู้ดูแลระบบเท่านั้น'); return; }
+  const e = fundEntries.find(x=>x.id===id);
+  if(!e) return;
+  const newType = prompt('ประเภท (in/ out):', e.type) || e.type;
+  const newAmount = prompt('จำนวนเงิน:', String(e.amount));
+  if(newAmount === null) return;
+  const memberInput = prompt('ชื่อสมาชิก:', memberName(e.memberId));
+  if(memberInput === null) return;
+  const m = members.find(x=> (x.name||'').toLowerCase().includes(memberInput.toLowerCase()));
+  if(m) e.memberId = m.id;
+  e.type = newType==='out' ? 'out' : 'in';
+  e.amount = parseFloat(newAmount) || e.amount;
+  const note = prompt('หมายเหตุ:', e.note || '');
+  if(note === null) return;
+  e.note = note;
+  e.ts = Date.now();
+  await saveKey(KEYS.fund, fundEntries);
+  renderFund();
+  await logAction(`แก้ไขรายการกองทุน: ${id}`);
 }
 async function addFundEntry(){
   if(!isAdmin()){ alert('บัญชีนี้ไม่มีสิทธิ์บันทึกรายการเงิน'); return; }
@@ -2137,7 +2193,7 @@ function renderActivities(type='sell'){
   type = type || currentActivityView;
   currentActivityView = type;
   // update button active states in panel
-  ['sell','airdrop','box'].forEach(k=>{
+  ['sell','airdrop','box','car'].forEach(k=>{
     const b = document.getElementById('actBtn-'+k);
     if(b) b.classList.toggle('active', k===type);
   });
@@ -2342,6 +2398,10 @@ function populateActivityForm(type){
     itemsDiv.innerHTML = '<div class="hint">ใช้ฟิลด์ "จำนวนเงินแดงที่ได้รับ" ด้านบน</div>';
     return;
   }
+  if(type === 'car'){
+    itemsDiv.innerHTML = '<div class="hint">ไม่ต้องเลือกของสำหรับกิจกรรมนี้</div>';
+    return;
+  }
   // airdrop / box: show inventory with thumbnails
   itemsDiv.classList.remove('act-items-list');
   itemsDiv.classList.add('act-items-grid');
@@ -2390,6 +2450,9 @@ async function performActivity(type){
     if(money <= 0){ alert('กรอกจำนวนเงินแดงที่ได้รับ'); return; }
     const moneyId = await findOrCreateItemByName('เงินแดง');
     if(moneyId) items.push({ itemId: moneyId, qty: money });
+  } else if(type === 'car'){
+    // car activity: no item selection required
+    items = [];
   } else {
     const checked = [...document.querySelectorAll(`input[name="actItem-${type}"]:checked`)];
     items = checked.map(ch => ({ itemId: ch.value, qty: parseInt((document.getElementById(`actItemQty-${type}-${ch.value}`)||{value:1}).value) || 1 }));
@@ -2405,7 +2468,7 @@ async function performActivity(type){
   try{
     let ptsPer = 0;
     if(type === 'airdrop') ptsPer = 2;
-    else if(type === 'sell' || type === 'box') ptsPer = 1;
+    else if(type === 'sell' || type === 'box' || type === 'car') ptsPer = 1;
     if(ptsPer > 0){
       memberIds.forEach(mid=>{
         pointsList.push({ id: uid(), memberId: mid, points: ptsPer, date: nowStr(), ts: Date.now(), source: type, activityId: rec.id });
@@ -2443,15 +2506,57 @@ function renderPerformedActivities(type){
     const vid = r.video ? `<a href="${r.video}" target="_blank" class="ghost">ดู VDO</a>` : '';
     const mems = (r.memberIds||[]).map(id=>escapeHtml(memberName(id))).join(', ');
     return `
-    <div class="row-item">
+    <div class="row-item" ${isAdmin()?`onclick="startEditPerformedActivity('${type}','${r.id}')"`:''}>
       <div>
         <div style="font-weight:700;">${mems} · ${escapeHtml(r.location)}</div>
         <div class="meta">${itemsText}</div>
         <div class="meta">${r.date}</div>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;">${vid}</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        ${vid}
+        ${isAdmin()?`<button class="ghost" onclick="event.stopPropagation(); deletePerformedActivity('${type}','${r.id}')">ลบ</button>`:''}
+      </div>
     </div>`;
   }).join('');
+}
+
+async function deletePerformedActivity(type,id){
+  if(!isAdmin()){ alert('บัญชีนี้ไม่มีสิทธิ์ลบรายการ'); return; }
+  const arr = performedActivities[type] || [];
+  const rec = arr.find(x=>x.id===id);
+  if(!rec) return;
+  if(!confirm('ยืนยันการลบประวัติการเล่นรายการนี้?')) return;
+  performedActivities[type] = arr.filter(x=>x.id!==id);
+  await saveKey(KEYS.activityRecords, performedActivities);
+  renderPerformedActivities(type);
+  await logAction(`ลบประวัติการเล่น (${type}): ${rec.id}`);
+}
+
+function startEditPerformedActivity(type,id){
+  if(!isAdmin()) return;
+  const arr = performedActivities[type] || [];
+  const r = arr.find(x=>x.id===id);
+  if(!r) return;
+  const newLocation = prompt('แก้ไขตำแหน่ง/สถานที่:', r.location || '');
+  if(newLocation === null) return;
+  const currentNames = (r.memberIds||[]).map(mid=>memberName(mid)).join(', ');
+  const memberInput = prompt('รายชื่อสมาชิก (คั่นด้วย , ) :', currentNames);
+  if(memberInput === null) return;
+  const names = memberInput.split(',').map(s=>s.trim()).filter(Boolean);
+  const newMemberIds = names.map(n=>{ const m = members.find(x=> (x.name||'').toLowerCase() === n.toLowerCase() || (x.name||'').toLowerCase().includes(n.toLowerCase())); return m?m.id:null; }).filter(Boolean);
+  const newItems = (r.items||[]).map(it=>{
+    const q = prompt(`จำนวนสำหรับ ${itemName(it.itemId)}:`, String(it.qty||1));
+    if(q === null) return it;
+    return { itemId: it.itemId, qty: parseInt(q)||0 };
+  });
+  r.location = newLocation;
+  if(newMemberIds.length) r.memberIds = newMemberIds;
+  r.items = newItems;
+  r.ts = Date.now();
+  saveKey(KEYS.activityRecords, performedActivities).then(()=>{
+    renderPerformedActivities(type);
+  });
+  logAction(`แก้ไขประวัติการเล่น (${type}): ${id}`);
 }
 
 function populateWorkForm(type){
@@ -2503,15 +2608,52 @@ function renderPerformedWork(type){
   list.innerHTML = sorted.map(r=>{
     const itemsText = (r.items||[]).map(i=>`${escapeHtml(itemName(i.itemId))} x${i.qty}`).join(' · ');
     return `
-    <div class="row-item">
+    <div class="row-item" ${isAdmin()?`onclick="startEditPerformedWork('${type}','${r.id}')"`:''}>
       <div>
         <div style="font-weight:700;">${escapeHtml(memberName(r.memberId))} · ${escapeHtml(r.location)}</div>
         <div class="meta">${itemsText}</div>
         <div class="meta">${r.date}</div>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;"></div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        ${isAdmin()?`<button class="ghost" onclick="event.stopPropagation(); deletePerformedWork('${type}','${r.id}')">ลบ</button>`:''}
+      </div>
     </div>`;
   }).join('');
+}
+
+async function deletePerformedWork(type,id){
+  if(!isAdmin()){ alert('บัญชีนี้ไม่มีสิทธิ์ลบรายการ'); return; }
+  const arr = performedWork[type] || [];
+  const rec = arr.find(x=>x.id===id);
+  if(!rec) return;
+  if(!confirm('ยืนยันการลบประวัติการทำงานรายการนี้?')) return;
+  performedWork[type] = arr.filter(x=>x.id!==id);
+  await saveKey(KEYS.workRecordsPerformed, performedWork);
+  renderPerformedWork(type);
+  await logAction(`ลบประวัติการทำงาน (${type}): ${rec.id}`);
+}
+
+function startEditPerformedWork(type,id){
+  if(!isAdmin()) return;
+  const arr = performedWork[type] || [];
+  const r = arr.find(x=>x.id===id);
+  if(!r) return;
+  const newLocation = prompt('แก้ไขตำแหน่ง/สถานที่:', r.location || '');
+  if(newLocation === null) return;
+  const memberInput = prompt('ชื่อสมาชิก:', memberName(r.memberId));
+  if(memberInput === null) return;
+  const m = members.find(x=> (x.name||'').toLowerCase().includes(memberInput.toLowerCase()));
+  if(m) r.memberId = m.id;
+  const newItems = (r.items||[]).map(it=>{
+    const q = prompt(`จำนวนสำหรับ ${itemName(it.itemId)}:`, String(it.qty||1));
+    if(q === null) return it;
+    return { itemId: it.itemId, qty: parseInt(q)||0 };
+  });
+  r.location = newLocation;
+  r.items = newItems;
+  r.ts = Date.now();
+  saveKey(KEYS.workRecordsPerformed, performedWork).then(()=> renderPerformedWork(type));
+  logAction(`แก้ไขประวัติการทำงาน (${type}): ${id}`);
 }
 
 // UI helpers to switch sub-views
@@ -2547,7 +2689,7 @@ function setWorkView(type){
 // Create hover submenus for nav buttons
 function createNavSubmenus(){
   const maps = {
-    activities: [ ['sell','ขายสาร'], ['airdrop','แอร์ดรอป'], ['box','กล่องพิเศษ'] ],
+    activities: [ ['sell','ขายสาร'], ['airdrop','แอร์ดรอป'], ['box','กล่องพิเศษ'], ['car','รถ 100 โล'] ],
     work: [ ['steal','จกปูน/ลิค'], ['sellDrug','ขายยา'] ]
   };
   Object.keys(maps).forEach(tab=>{
