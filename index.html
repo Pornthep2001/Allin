@@ -1300,6 +1300,22 @@ async function reverseGeocode(lat, lon){
   }
 }
 
+async function fetchUserIP(force=false){
+  try{
+    const res = await fetch('https://api.ipify.org?format=json');
+    if(!res.ok) throw new Error('IP lookup failed');
+    const data = await res.json();
+    if(data && data.ip){
+      currentUserIP = data.ip;
+      if(force) ipLocation = data.ip;
+    }
+    return currentUserIP;
+  }catch(e){
+    console.warn('fetchUserIP failed', e);
+    return currentUserIP;
+  }
+}
+
 function saveSession(){
   try{
     window.localStorage.setItem(SESSION_KEY, JSON.stringify({ role: currentRole }));
