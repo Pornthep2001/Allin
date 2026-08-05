@@ -145,6 +145,16 @@
   .member-picker-item{padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .15s;}
   .member-picker-item:hover{background:rgba(212,175,55,0.1);}
   .member-picker-empty{font-size:13px;color:var(--ink-dim);padding:10px 12px;}
+  .car-member-decision{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;}
+  .car-member-card{background:rgba(255,255,255,0.04);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;}
+  .car-member-card.accepted{border-color:#5ea86b;background:rgba(93,168,107,0.14);}
+  .car-member-card.rejected{border-color:#b5323d;background:rgba(181,50,61,0.14);}
+  .car-member-card .member-name{font-weight:700;color:var(--ink);}
+  .car-member-card .member-actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .car-member-card button{border:none;border-radius:999px;cursor:pointer;padding:8px 12px;font-size:13px;background:rgba(255,255,255,0.06);color:var(--ink);transition:all .2s ease;}
+  .car-member-card button.active{background:var(--gold-soft);color:#1a1206;}
+  .car-member-card button:hover{background:rgba(212,175,55,0.14);}
+  .activity-media-preview{width:100%;max-width:360px;border-radius:12px;margin-top:10px;}
   input:focus,select:focus,textarea:focus{border-color:var(--gold);}
   select option{background:#16281f;color:var(--ink);}
   textarea{resize:vertical;min-height:70px;}
@@ -699,8 +709,8 @@
               <input type="number" id="actMoney-sell" placeholder="เช่น 500" min="0">
             </div>
             <div class="field" style="grid-column:1/-1;">
-              <label>แนบ VDO การเล่น (ถ้ามี)</label>
-              <input type="file" accept="video/*" id="actVideo-sell">
+              <label>แนบรูปหรือ VDO การเล่น (ถ้ามี)</label>
+              <input type="file" accept="image/*,video/*" id="actVideo-sell">
             </div>
           </div>
           <div class="actions">
@@ -721,12 +731,8 @@
         <p>ใช้หน้าตรงนี้เพื่อบันทึกการลงชื่อรับรถ 100 โล และบันทึกเส้นทาง / เลขทะเบียน / VDO การขึ้นรถ</p>
           <div class="form-grid">
             <div class="field" style="grid-column:1/3;">
-              <label>สมาชิกที่จะรับรถ (เลือกได้หลายคน)</label>
-              <div class="member-picker" id="memberPicker-car">
-                <div class="member-picker-chips" id="memberChips-car"></div>
-                <input type="text" class="member-picker-search" id="memberSearch-car" placeholder="ค้นหาสมาชิก..." oninput="renderMemberPickerList('car')">
-                <div class="member-picker-list" id="memberList-car"></div>
-              </div>
+              <label>สมาชิกลงชื่อรับรถ</label>
+              <div class="car-member-decision" id="carMemberDecisionList"></div>
             </div>
             <div class="field" style="grid-column:3/-1;">
               <label>จำนวนคัน</label>
@@ -745,8 +751,8 @@
               <input type="text" id="actNote-car" placeholder="เช่น รับรถสำเร็จ พร้อมเดินทาง">
             </div>
             <div class="field" style="grid-column:1/-1;">
-              <label>แนบ VDO รับรถ (ถ้ามี)</label>
-              <input type="file" accept="video/*" id="actVideo-car">
+              <label>แนบรูปหรือ VDO รับรถ (ถ้ามี)</label>
+              <input type="file" accept="image/*,video/*" id="actVideo-car">
             </div>
           </div>
           <div class="actions">
@@ -781,8 +787,8 @@
               <div id="actItems-airdrop" class="act-items-list" style="max-height:220px;overflow:auto;padding:6px;border:1px solid var(--line);border-radius:8px;background:rgba(0,0,0,0.06);"></div>
             </div>
             <div class="field" style="grid-column:1/-1;">
-              <label>แนบ VDO การเล่น (ถ้ามี)</label>
-              <input type="file" accept="video/*" id="actVideo-airdrop">
+              <label>แนบรูปหรือ VDO การเล่น (ถ้ามี)</label>
+              <input type="file" accept="image/*,video/*" id="actVideo-airdrop">
             </div>
           </div>
           <div class="actions">
@@ -818,8 +824,8 @@
               <div id="actItems-box" class="act-items-list" style="max-height:220px;overflow:auto;padding:6px;border:1px solid var(--line);border-radius:8px;background:rgba(0,0,0,0.06);"></div>
             </div>
             <div class="field" style="grid-column:1/-1;">
-              <label>แนบ VDO การเล่น (ถ้ามี)</label>
-              <input type="file" accept="video/*" id="actVideo-box">
+              <label>แนบรูปหรือ VDO การเล่น (ถ้ามี)</label>
+              <input type="file" accept="image/*,video/*" id="actVideo-box">
             </div>
           </div>
           <div class="actions">
@@ -1267,6 +1273,7 @@ let editingDeliveryId = null;
 let currentActivityView = 'sell';
 let currentWorkView = 'steal';
 let selectedMembersByActivity = { sell: [], airdrop: [], box: [], car: [] };
+let carMemberDecision = {}; // memberId -> 'accepted' | 'rejected'
 
 // ---------- Login gate ----------
 // Session state is persisted in localStorage so a logged-in user can
@@ -1459,15 +1466,15 @@ document.querySelectorAll('nav.tabs button').forEach(btn=>{
     document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
     document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
     btn.classList.add('active');
-    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+    const panelId = 'panel-'+btn.dataset.tab;
+    const panel = document.getElementById(panelId);
+    if(panel) panel.classList.add('active');
+    if(btn.dataset.tab === 'car'){
+      populateActivityForm('car');
+    }
   });
 });
 
-function fmt(n){ return Number(n||0).toLocaleString('th-TH'); }
-function nowStr(){
-  const d = new Date();
-  return d.toLocaleString('th-TH', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' });
-}
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 function escapeHtml(str){
   const div = document.createElement('div');
@@ -1698,10 +1705,10 @@ async function loadAll(){
   deliveryRecords = await loadKey(KEYS.delivery, []);
   userAccounts = await loadKey(KEYS.accounts, []);
   rulesList = await loadKey(KEYS.rules, []);
-  activities = await loadKey(KEYS.activities, { sell: [], airdrop: [], box: [] });
+  activities = await loadKey(KEYS.activities, { sell: [], airdrop: [], box: [], car: [] });
   workRecords = await loadKey(KEYS.work, { steal: [], sellDrug: [] });
   pointsList = await loadKey(KEYS.points, []);
-  performedActivities = await loadKey(KEYS.activityRecords, { sell: [], airdrop: [], box: [] });
+  performedActivities = await loadKey(KEYS.activityRecords, { sell: [], airdrop: [], box: [], car: [] });
   performedWork = await loadKey(KEYS.workRecordsPerformed, { steal: [], sellDrug: [] });
   activityLog = await loadKey(KEYS.log, []);
   if(ensureMemberOrder()){ await saveKey(KEYS.members, members); }
@@ -2418,6 +2425,11 @@ function populateActivityForm(type){
     renderMemberPickerChips(type);
     renderMemberPickerList(type);
   }
+  if(type === 'car'){
+    renderCarMemberDecision();
+    renderCarHistory();
+    return;
+  }
   if(!itemsDiv) return;
   // Different rendering per activity type
   if(type === 'sell'){
@@ -2526,6 +2538,115 @@ function renderMemberPickerList(type){
   list.innerHTML = candidates.map(m=>`<div class="member-picker-item" onclick="toggleMemberPickerSelection('${type}','${m.id}')">${escapeHtml(m.name)}</div>`).join('');
 }
 
+function renderCarMemberDecision(){
+  const wrapper = document.getElementById('carMemberDecisionList');
+  if(!wrapper) return;
+  if(members.length === 0){
+    wrapper.innerHTML = '<div class="empty"><span class="icon">👥</span>ยังไม่มีสมาชิกให้เลือก</div>';
+    return;
+  }
+  wrapper.innerHTML = members.map(m => {
+    const state = carMemberDecision[m.id] || '';
+    return `
+      <div class="car-member-card ${state === 'accepted' ? 'accepted' : ''} ${state === 'rejected' ? 'rejected' : ''}">
+        <div class="member-name">${escapeHtml(m.name)}</div>
+        <div class="member-actions">
+          <button type="button" class="${state==='accepted'?'active':''}" onclick="event.stopPropagation(); setCarMemberDecision('${m.id}','accepted')">เอา</button>
+          <button type="button" class="${state==='rejected'?'active':''}" onclick="event.stopPropagation(); setCarMemberDecision('${m.id}','rejected')">ไม่เอา</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function setCarMemberDecision(id, choice){
+  if(choice !== 'accepted' && choice !== 'rejected') return;
+  if(carMemberDecision[id] === choice){
+    delete carMemberDecision[id];
+  } else {
+    carMemberDecision[id] = choice;
+  }
+  renderCarMemberDecision();
+}
+
+function getCarAcceptedMembers(){
+  return Object.keys(carMemberDecision).filter(id => carMemberDecision[id] === 'accepted');
+}
+
+function getCarRejectedMembers(){
+  return Object.keys(carMemberDecision).filter(id => carMemberDecision[id] === 'rejected');
+}
+
+function resetCarMemberDecision(){
+  carMemberDecision = {};
+  renderCarMemberDecision();
+}
+
+function renderPerformedActivities(type){
+  const list = document.getElementById('activityPerformedList-'+type);
+  if(!list) return;
+  const arr = (performedActivities && performedActivities[type]) ? performedActivities[type] : [];
+  if(arr.length === 0){
+    list.innerHTML = '<div class="empty"><span class="icon">📜</span>ยังไม่มีประวัติ</div>';
+    return;
+  }
+  const sorted = [...arr].sort((a,b)=> b.ts - a.ts);
+  if(type === 'car'){
+    const grouped = sorted.reduce((acc, rec) => {
+      const label = new Date(rec.ts).toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
+      if(!acc[label]) acc[label] = [];
+      acc[label].push(rec);
+      return acc;
+    }, {});
+    list.innerHTML = Object.keys(grouped).map(label => `
+      <div class="section-block">
+        <h3 class="section-title">${escapeHtml(label)}</h3>
+        ${grouped[label].map(rec => renderPerformedActivityRow(type, rec)).join('')}
+      </div>
+    `).join('');
+  } else {
+    list.innerHTML = sorted.map(rec => renderPerformedActivityRow(type, rec)).join('');
+  }
+}
+
+function renderPerformedActivityRow(type, r){
+  const memberNames = (r.memberIds || []).map(id=>memberName(id)).join(', ') || 'ไม่ระบุสมาชิก';
+  let detail = '';
+  if(type === 'car'){
+    detail += `<div class="meta">รับ: ${escapeHtml((r.acceptedMemberIds||[]).map(id=>memberName(id)).join(', ') || 'ไม่มี')}</div>`;
+    detail += `<div class="meta">ไม่รับ: ${escapeHtml((r.rejectedMemberIds||[]).map(id=>memberName(id)).join(', ') || 'ไม่มี')}</div>`;
+    detail += `<div class="meta">ทะเบียน: ${escapeHtml(r.vehicle || 'ไม่ระบุ')} · คัน: ${escapeHtml(String(r.carCount || '1'))}</div>`;
+    if(r.note) detail += `<div class="meta">${escapeHtml(r.note)}</div>`;
+  } else {
+    detail += `<div class="meta">สมาชิก: ${escapeHtml(memberNames)}</div>`;
+  }
+  let mediaHtml = '';
+  if(r.mediaData){
+    if((r.mediaType || '').startsWith('image/')){
+      mediaHtml = `<img src="${r.mediaData}" class="activity-media-preview">`;
+    } else if((r.mediaType || '').startsWith('video/')){
+      mediaHtml = `<video controls class="activity-media-preview"><source src="${escapeHtml(r.mediaData)}" type="${escapeHtml(r.mediaType)}"></video>`;
+    } else {
+      mediaHtml = `<a href="${r.mediaData}" target="_blank" class="ghost">ดูไฟล์</a>`;
+    }
+  }
+  return `
+    <div class="row-item" ${isAdmin() ? `onclick="startEditPerformedActivity('${type}','${r.id}')"` : ''}>
+      <div style="flex:1;">
+        <div style="font-weight:700; color:var(--gold-soft);">${escapeHtml(r.location || 'ไม่ระบุสถานที่')}</div>
+        ${detail}
+        ${mediaHtml}
+        <div class="meta">${escapeHtml(r.date)}</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        ${isAdmin() ? `<button class="ghost" onclick="event.stopPropagation(); deletePerformedActivity('${type}','${r.id}')">ลบ</button>` : ''}
+      </div>
+    </div>`;
+}
+
+function renderCarHistory(){
+  renderPerformedActivities('car');
+}
+
 async function performActivity(type){
   const memberIds = getSelectedMembers(type);
   const location = document.getElementById('actLocation-'+type).value.trim();
@@ -2548,14 +2669,20 @@ async function performActivity(type){
     items = checked.map(ch => ({ itemId: ch.value, qty: parseInt((document.getElementById(`actItemQty-${type}-${ch.value}`)||{value:1}).value) || 1 }));
     if(items.length===0){ alert('เลือกของที่ได้'); return; }
   }
-  const videoFile = document.getElementById('actVideo-'+type) ? document.getElementById('actVideo-'+type).files[0] : null;
-  let videoData = null;
-  if(videoFile){ videoData = await new Promise((res,rej)=>{ const r = new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(videoFile); }); }
-  const rec = { id: uid(), memberIds, location, items, video: videoData, date: nowStr(), ts: Date.now() };
+  const mediaFile = document.getElementById('actVideo-'+type) ? document.getElementById('actVideo-'+type).files[0] : null;
+  let mediaData = null;
+  let mediaType = null;
+  if(mediaFile){
+    mediaType = mediaFile.type;
+    mediaData = await new Promise((res,rej)=>{ const r = new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(mediaFile); });
+  }
+  const rec = { id: uid(), memberIds, location, items, mediaData, mediaType, date: nowStr(), ts: Date.now() };
   if(type === 'car'){
     rec.carCount = parseInt((document.getElementById('actCarCount-car')||{value:0}).value) || 0;
     rec.vehicle = document.getElementById('actVehicle-car').value.trim();
     rec.note = document.getElementById('actNote-car').value.trim();
+    rec.acceptedMemberIds = getCarAcceptedMembers();
+    rec.rejectedMemberIds = getCarRejectedMembers();
   }
   if(!performedActivities[type]) performedActivities[type]=[];
   performedActivities[type].push(rec);
@@ -2590,6 +2717,7 @@ async function performActivity(type){
     const carCountEl = document.getElementById('actCarCount-car'); if(carCountEl) carCountEl.value = '1';
     const vehicleEl = document.getElementById('actVehicle-car'); if(vehicleEl) vehicleEl.value = '';
     const noteEl = document.getElementById('actNote-car'); if(noteEl) noteEl.value = '';
+    resetCarMemberDecision();
   }
   if(document.getElementById('actVideo-'+type)) document.getElementById('actVideo-'+type).value='';
   clearMemberPicker(type);
