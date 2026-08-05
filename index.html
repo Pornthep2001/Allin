@@ -1436,17 +1436,29 @@ async function loginWithVerify(){
 }
 
 async function logout(){
-  if(currentRole){ await logAction('ออกจากระบบ'); }
+  try{
+    if(currentRole){
+      await logAction('ออกจากระบบ');
+    }
+  }catch(e){
+    console.warn('logout: logAction failed', e);
+  }
   clearSession();
   currentRole = null;
   currentUserIP = 'ไม่ทราบ IP';
   locationVerified = false;
-  document.getElementById('appRoot').style.display = 'none';
-  document.getElementById('loginGate').style.display = 'flex';
-  document.getElementById('loginUser').value = '';
-  document.getElementById('loginPass').value = '';
-  document.getElementById('loginError').textContent = '';
-  document.getElementById('ipInfo').textContent = '';
+  const appRoot = document.getElementById('appRoot');
+  const loginGate = document.getElementById('loginGate');
+  if(appRoot) appRoot.style.display = 'none';
+  if(loginGate) loginGate.style.display = 'flex';
+  const loginUser = document.getElementById('loginUser');
+  const loginPass = document.getElementById('loginPass');
+  const loginError = document.getElementById('loginError');
+  const ipInfo = document.getElementById('ipInfo');
+  if(loginUser) loginUser.value = '';
+  if(loginPass) loginPass.value = '';
+  if(loginError) loginError.textContent = '';
+  if(ipInfo) ipInfo.textContent = '';
   const loginBtn = document.getElementById('loginBtn');
   if(loginBtn) loginBtn.disabled = false;
   document.body.classList.remove('role-member');
@@ -1465,20 +1477,24 @@ document.getElementById('loginPass').addEventListener('keydown', (e)=>{
 });
 
 window.addEventListener('DOMContentLoaded', async ()=>{
-  if(restoreSession()){
-    document.getElementById('loginGate').style.display = 'none';
-    document.getElementById('appRoot').style.display = 'block';
-    applyRoleUI();
-    await loadAll();
-    showAnnouncementPopup();
-  }
-  // prepare hover submenus for activities/work nav items
-  createNavSubmenus();
   const logoutBtn = document.getElementById('logoutBtn');
   if(logoutBtn){
     logoutBtn.removeAttribute('onclick');
     logoutBtn.addEventListener('click', logout);
   }
+  try {
+    if(restoreSession()){
+      document.getElementById('loginGate').style.display = 'none';
+      document.getElementById('appRoot').style.display = 'block';
+      applyRoleUI();
+      await loadAll();
+      showAnnouncementPopup();
+    }
+  } catch(e) {
+    console.error('Error during startup:', e);
+  }
+  // prepare hover submenus for activities/work nav items
+  createNavSubmenus();
 });
 
 // ---------- Tabs ----------
