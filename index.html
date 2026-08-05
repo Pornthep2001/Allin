@@ -135,6 +135,16 @@
     outline:none;transition:border-color .15s;
   }
   select[multiple]{min-height:110px;padding:8px 10px;background:rgba(0,0,0,0.18);}
+  .member-picker{background:rgba(0,0,0,0.18);border:1px solid var(--line);border-radius:12px;padding:10px;}
+  .member-picker-chips{display:flex;flex-wrap:wrap;gap:8px;min-height:40px;align-items:center;}
+  .member-picker-chip{display:inline-flex;align-items:center;gap:8px;background:rgba(212,175,55,0.12);border:1px solid rgba(212,175,55,0.25);color:var(--ink);border-radius:999px;padding:6px 10px;font-size:13px;}
+  .member-picker-chip button{border:none;background:none;color:var(--ink-dim);font-size:14px;cursor:pointer;}
+  .member-picker-chip button:hover{color:var(--ink);}
+  .member-picker-search{width:100%;margin-top:10px;background:rgba(0,0,0,0.23);border:1px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--ink);font-size:14px;}
+  .member-picker-list{margin-top:8px;max-height:180px;overflow:auto;border-top:1px solid rgba(255,255,255,0.04);padding-top:8px;}
+  .member-picker-item{padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .15s;}
+  .member-picker-item:hover{background:rgba(212,175,55,0.1);}
+  .member-picker-empty{font-size:13px;color:var(--ink-dim);padding:10px 12px;}
   input:focus,select:focus,textarea:focus{border-color:var(--gold);}
   select option{background:#16281f;color:var(--ink);}
   textarea{resize:vertical;min-height:70px;}
@@ -674,7 +684,11 @@
           <div class="form-grid">
             <div class="field" style="grid-column:1/3;">
               <label>สมาชิก (เลือกได้หลายคน)</label>
-              <select id="actMember-sell" multiple size="4"></select>
+              <div class="member-picker" id="memberPicker-sell">
+                <div class="member-picker-chips" id="memberChips-sell"></div>
+                <input type="text" class="member-picker-search" id="memberSearch-sell" placeholder="ค้นหาสมาชิก..." oninput="renderMemberPickerList('sell')">
+                <div class="member-picker-list" id="memberList-sell"></div>
+              </div>
             </div>
             <div class="field" style="grid-column:3/-1;">
               <label>จุดที่ไปเล่น / สถานที่</label>
@@ -708,7 +722,11 @@
           <div class="form-grid">
             <div class="field" style="grid-column:1/3;">
               <label>สมาชิกที่จะรับรถ (เลือกได้หลายคน)</label>
-              <select id="actMember-car" multiple size="4"></select>
+              <div class="member-picker" id="memberPicker-car">
+                <div class="member-picker-chips" id="memberChips-car"></div>
+                <input type="text" class="member-picker-search" id="memberSearch-car" placeholder="ค้นหาสมาชิก..." oninput="renderMemberPickerList('car')">
+                <div class="member-picker-list" id="memberList-car"></div>
+              </div>
             </div>
             <div class="field" style="grid-column:3/-1;">
               <label>จำนวนคัน</label>
@@ -748,7 +766,11 @@
           <div class="form-grid">
             <div class="field" style="grid-column:1/3;">
               <label>สมาชิก (เลือกได้หลายคน)</label>
-              <select id="actMember-airdrop" multiple size="4"></select>
+              <div class="member-picker" id="memberPicker-airdrop">
+                <div class="member-picker-chips" id="memberChips-airdrop"></div>
+                <input type="text" class="member-picker-search" id="memberSearch-airdrop" placeholder="ค้นหาสมาชิก..." oninput="renderMemberPickerList('airdrop')">
+                <div class="member-picker-list" id="memberList-airdrop"></div>
+              </div>
             </div>
             <div class="field" style="grid-column:3/-1;">
               <label>จุดที่ไปเล่น / สถานที่</label>
@@ -781,7 +803,11 @@
           <div class="form-grid">
             <div class="field" style="grid-column:1/3;">
               <label>สมาชิก (เลือกได้หลายคน)</label>
-              <select id="actMember-box" multiple size="4"></select>
+              <div class="member-picker" id="memberPicker-box">
+                <div class="member-picker-chips" id="memberChips-box"></div>
+                <input type="text" class="member-picker-search" id="memberSearch-box" placeholder="ค้นหาสมาชิก..." oninput="renderMemberPickerList('box')">
+                <div class="member-picker-list" id="memberList-box"></div>
+              </div>
             </div>
             <div class="field" style="grid-column:3/-1;">
               <label>จุดที่ไปเล่น / สถานที่</label>
@@ -1240,6 +1266,7 @@ let editingItemId = null;
 let editingDeliveryId = null;
 let currentActivityView = 'sell';
 let currentWorkView = 'steal';
+let selectedMembersByActivity = { sell: [], airdrop: [], box: [], car: [] };
 
 // ---------- Login gate ----------
 // Session state is persisted in localStorage so a logged-in user can
@@ -2384,21 +2411,12 @@ function renderPoints(){
 
 // ----- Activity / Work perform helpers -----
 function populateActivityForm(type){
-  const memberSel = document.getElementById('actMember-'+type);
   const itemsDiv = document.getElementById('actItems-'+type);
-  if(memberSel){
-    // insert a simple filter input above the select to make searching easier
-    const parent = memberSel.parentNode;
-    if(parent && !parent.querySelector('.member-filter')){
-      const inp = document.createElement('input');
-      inp.type = 'text'; inp.placeholder = 'ค้นหาสมาชิก...'; inp.className = 'member-filter';
-      inp.style.marginBottom = '8px'; inp.addEventListener('input', (e)=>{
-        const q = (e.target.value||'').toLowerCase();
-        memberSel.innerHTML = members.filter(m=> (m.name||'').toLowerCase().includes(q)).map(m=>`<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
-      });
-      parent.insertBefore(inp, memberSel);
-    }
-    memberSel.innerHTML = members.map(m=>`<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
+  const picker = document.getElementById('memberPicker-'+type);
+  if(picker){
+    selectedMembersByActivity[type] = selectedMembersByActivity[type] || [];
+    renderMemberPickerChips(type);
+    renderMemberPickerList(type);
   }
   if(!itemsDiv) return;
   // Different rendering per activity type
@@ -2447,9 +2465,69 @@ async function findOrCreateItemByName(name){
   return newItem.id;
 }
 
+function getSelectedMembers(type){
+  return selectedMembersByActivity[type] ? [...selectedMembersByActivity[type]] : [];
+}
+
+function toggleMemberPickerSelection(type,id){
+  selectedMembersByActivity[type] = selectedMembersByActivity[type] || [];
+  const idx = selectedMembersByActivity[type].indexOf(id);
+  if(idx >= 0){
+    selectedMembersByActivity[type].splice(idx,1);
+  } else {
+    selectedMembersByActivity[type].push(id);
+  }
+  renderMemberPickerChips(type);
+  renderMemberPickerList(type);
+}
+
+function removeMemberFromPicker(type,id){
+  selectedMembersByActivity[type] = selectedMembersByActivity[type] || [];
+  selectedMembersByActivity[type] = selectedMembersByActivity[type].filter(mid=>mid!==id);
+  renderMemberPickerChips(type);
+  renderMemberPickerList(type);
+}
+
+function clearMemberPicker(type){
+  selectedMembersByActivity[type] = [];
+  const search = document.getElementById('memberSearch-'+type);
+  if(search) search.value = '';
+  renderMemberPickerChips(type);
+  renderMemberPickerList(type);
+}
+
+function renderMemberPickerChips(type){
+  const chips = document.getElementById('memberChips-'+type);
+  if(!chips) return;
+  const selected = selectedMembersByActivity[type] || [];
+  if(selected.length === 0){
+    chips.innerHTML = '<div class="member-picker-empty">ยังไม่เลือกสมาชิก</div>';
+    return;
+  }
+  chips.innerHTML = selected.map(id=>{
+    const name = escapeHtml(memberName(id) || 'ไม่ระบุ');
+    return `<span class="member-picker-chip">${name}<button type="button" onclick="event.stopPropagation(); removeMemberFromPicker('${type}','${id}')">×</button></span>`;
+  }).join('');
+}
+
+function renderMemberPickerList(type){
+  const list = document.getElementById('memberList-'+type);
+  const search = document.getElementById('memberSearch-'+type);
+  if(!list) return;
+  const q = (search ? search.value.trim().toLowerCase() : '');
+  const selected = new Set(selectedMembersByActivity[type] || []);
+  const candidates = members
+    .filter(m => !selected.has(m.id) && (!q || (m.name||'').toLowerCase().includes(q)))
+    .sort((a,b)=> (a.name||'').localeCompare(b.name||''));
+  if(candidates.length === 0){
+    list.innerHTML = '<div class="member-picker-empty">ไม่มีสมาชิกที่ตรงกับคำค้นหรือถูกเลือกแล้ว</div>';
+    return;
+  }
+  list.innerHTML = candidates.map(m=>`<div class="member-picker-item" onclick="toggleMemberPickerSelection('${type}','${m.id}')">${escapeHtml(m.name)}</div>`).join('');
+}
+
 async function performActivity(type){
-  const sel = document.getElementById('actMember-'+type);
-  const memberIds = sel ? [...sel.selectedOptions].map(o=>o.value).filter(Boolean) : [];
+  const memberIds = getSelectedMembers(type);
   const location = document.getElementById('actLocation-'+type).value.trim();
   if(memberIds.length===0){ alert('เลือกสมาชิกอย่างน้อยหนึ่งคน'); return; }
   let items = [];
@@ -2514,40 +2592,7 @@ async function performActivity(type){
     const noteEl = document.getElementById('actNote-car'); if(noteEl) noteEl.value = '';
   }
   if(document.getElementById('actVideo-'+type)) document.getElementById('actVideo-'+type).value='';
-  [...document.querySelectorAll(`input[name="actItem-${type}"]`)].forEach(cb=>{ cb.checked=false; const q = document.getElementById(`actItemQty-${type}-${cb.value}`); if(q) q.value=''; });
-}
-
-function renderPerformedActivities(type){
-  const list = document.getElementById('activityPerformedList-'+type);
-  if(!list) return;
-  const arr = (performedActivities && performedActivities[type]) ? performedActivities[type] : [];
-  if(arr.length===0){ list.innerHTML = '<div class="empty"><span class="icon">🎯</span>ยังไม่มีการบันทึกกิจกรรม</div>'; return; }
-  const sorted = [...arr].sort((a,b)=> b.ts - a.ts);
-  list.innerHTML = sorted.map(r=>{
-    const vid = r.video ? `<a href="${r.video}" target="_blank" class="ghost">ดู VDO</a>` : '';
-    const mems = (r.memberIds||[]).map(id=>escapeHtml(memberName(id))).join(', ');
-    let detailLines = '';
-    if(type === 'car'){
-      detailLines = `<div class="meta">จำนวนคัน: ${escapeHtml(r.carCount||'1')} · ทะเบียน: ${escapeHtml(r.vehicle||'ไม่ระบุ')}</div>`;
-      if(r.note) detailLines += `<div class="meta">หมายเหตุ: ${escapeHtml(r.note)}</div>`;
-      if(r.location) detailLines += `<div class="meta">เส้นทาง/จุด: ${escapeHtml(r.location)}</div>`;
-    } else {
-      const itemsText = (r.items||[]).map(i=>`${escapeHtml(itemName(i.itemId))} x${i.qty}`).join(' · ');
-      detailLines = `<div class="meta">${itemsText}</div><div class="meta">${escapeHtml(r.location)}</div>`;
-    }
-    return `
-    <div class="row-item" ${isAdmin()?`onclick="startEditPerformedActivity('${type}','${r.id}')"`:''}>
-      <div>
-        <div style="font-weight:700;">${mems}</div>
-        ${detailLines}
-        <div class="meta">${r.date}</div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        ${vid}
-        ${isAdmin()?`<button class="ghost" onclick="event.stopPropagation(); deletePerformedActivity('${type}','${r.id}')">ลบ</button>`:''}
-      </div>
-    </div>`;
-  }).join('');
+  clearMemberPicker(type);
 }
 
 async function deletePerformedActivity(type,id){
