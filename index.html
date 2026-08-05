@@ -594,7 +594,8 @@
         </div>
       </div>
       <div class="actions">
-        <button class="primary" onclick="addMember()">เพิ่มสมาชิก</button>
+        <button class="primary" id="memberSaveButton" onclick="addMember()">เพิ่มสมาชิก</button>
+        <button class="ghost" id="memberCancelButton" onclick="cancelEditMember()" style="display:none;">ยกเลิก</button>
       </div>
     </div>
 
@@ -682,6 +683,10 @@
               <label>จำนวนเงินแดงที่ได้รับ (บาท)</label>
               <input type="number" id="actMoney-sell" placeholder="เช่น 500" min="0">
             </div>
+            <div class="field" style="grid-column:1/-1;">
+              <label>แนบ VDO การเล่น (ถ้ามี)</label>
+              <input type="file" accept="video/*" id="actVideo-sell">
+            </div>
           </div>
           <div class="actions">
             <button class="primary" onclick="performActivity('sell')">บันทึก (ขายสาร)</button>
@@ -711,6 +716,10 @@
               <label>ของที่ได้ (เลือกและระบุจำนวน) — แสดงรูปจากเมนูของ</label>
               <div id="actItems-airdrop" class="act-items-list" style="max-height:220px;overflow:auto;padding:6px;border:1px solid var(--line);border-radius:8px;background:rgba(0,0,0,0.06);"></div>
             </div>
+            <div class="field" style="grid-column:1/-1;">
+              <label>แนบ VDO การเล่น (ถ้ามี)</label>
+              <input type="file" accept="video/*" id="actVideo-airdrop">
+            </div>
           </div>
           <div class="actions">
             <button class="primary" onclick="performActivity('airdrop')">บันทึก (แอร์ดรอป)</button>
@@ -739,6 +748,10 @@
             <div class="field" style="grid-column:1/-1;">
               <label>ของที่ได้ (เลือกและระบุจำนวน) — แสดงรูปจากเมนูของ</label>
               <div id="actItems-box" class="act-items-list" style="max-height:220px;overflow:auto;padding:6px;border:1px solid var(--line);border-radius:8px;background:rgba(0,0,0,0.06);"></div>
+            </div>
+            <div class="field" style="grid-column:1/-1;">
+              <label>แนบ VDO การเล่น (ถ้ามี)</label>
+              <input type="file" accept="video/*" id="actVideo-box">
             </div>
           </div>
           <div class="actions">
@@ -1131,7 +1144,7 @@
       <p class="hint" style="margin-top:-8px;margin-bottom:14px;">บันทึกอัตโนมัติทุกครั้งที่มีการเพิ่ม/แก้ไข/ลบข้อมูล — รายการในนี้ลบไม่ได้ ไม่ว่าจะเป็นบัญชีสิทธิ์ไหนก็ตาม</p>
       <div class="list" id="logList"></div>
     </div>
-    <div class="card">
+    <div class="card admin-only">
       <h2>โอนย้ายข้อมูล <span class="eyebrow">Sync Data</span></h2>
       <p class="hint">ส่งออกไฟล์ JSON จากเครื่องหนึ่ง แล้วนำเข้าอีกเครื่อง เพื่อให้ข้อมูลชุดเดียวกันทั้งคอมและมือถือ.</p>
       <div class="actions" style="flex-wrap:wrap;gap:10px;">
@@ -1178,6 +1191,7 @@ let workRecords = { steal: [], sellDrug: [] };
 let pointsList = [];
 let performedActivities = { sell: [], airdrop: [], box: [] };
 let performedWork = { steal: [], sellDrug: [] };
+let editingMemberId = null;
 let pendingMemberImage = null;
 let pendingItemImage = null;
 let editingItemId = null;
@@ -1513,6 +1527,99 @@ function renderLog(){
   }).join('');
 }
 
+function downloadObjectAsJson(exportObj, exportName){
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj, null, 2));
+  const dlAnchor = document.createElement('a');
+  dlAnchor.setAttribute('href', dataStr);
+  dlAnchor.setAttribute('download', exportName + '.json');
+  document.body.appendChild(dlAnchor);
+  dlAnchor.click();
+  document.body.removeChild(dlAnchor);
+}
+
+function exportDataSet(){
+  if(!isAdmin()){ alert('เฉพาะผู้ดูแลระบบเท่านั้น'); return; }
+  const payload = {
+    members,
+    fundEntries,
+    announcements,
+    inventory,
+    borrowRecords,
+    deliveryRecords,
+    userAccounts,
+    rulesList,
+    activities,
+    workRecords,
+    pointsList,
+    performedActivities,
+    performedWork,
+    activityLog
+  };
+  downloadObjectAsJson(payload, 'allin-data-export');
+}
+
+function importDataSet(event){
+  if(!isAdmin()){ alert('เฉพาะผู้ดูแลระบบเท่านั้น'); return; }
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if(!confirm('ยืนยันนำเข้าข้อมูล จะเขียนทับฐานข้อมูลปัจจุบันทั้งหมด?')) return;
+      members = Array.isArray(data.members) ? data.members : [];
+      fundEntries = Array.isArray(data.fundEntries) ? data.fundEntries : [];
+      announcements = Array.isArray(data.announcements) ? data.announcements : [];
+      inventory = Array.isArray(data.inventory) ? data.inventory : [];
+      borrowRecords = Array.isArray(data.borrowRecords) ? data.borrowRecords : [];
+      deliveryRecords = Array.isArray(data.deliveryRecords) ? data.deliveryRecords : [];
+      userAccounts = Array.isArray(data.userAccounts) ? data.userAccounts : [];
+      rulesList = Array.isArray(data.rulesList) ? data.rulesList : [];
+      activities = data.activities && typeof data.activities === 'object' ? data.activities : { sell: [], airdrop: [], box: [] };
+      workRecords = data.workRecords && typeof data.workRecords === 'object' ? data.workRecords : { steal: [], sellDrug: [] };
+      pointsList = Array.isArray(data.pointsList) ? data.pointsList : [];
+      performedActivities = data.performedActivities && typeof data.performedActivities === 'object' ? data.performedActivities : { sell: [], airdrop: [], box: [] };
+      performedWork = data.performedWork && typeof data.performedWork === 'object' ? data.performedWork : { steal: [], sellDrug: [] };
+      activityLog = Array.isArray(data.activityLog) ? data.activityLog : [];
+      await saveKey(KEYS.members, members);
+      await saveKey(KEYS.fund, fundEntries);
+      await saveKey(KEYS.announce, announcements);
+      await saveKey(KEYS.items, inventory);
+      await saveKey(KEYS.borrow, borrowRecords);
+      await saveKey(KEYS.delivery, deliveryRecords);
+      await saveKey(KEYS.accounts, userAccounts);
+      await saveKey(KEYS.rules, rulesList);
+      await saveKey(KEYS.activities, activities);
+      await saveKey(KEYS.work, workRecords);
+      await saveKey(KEYS.points, pointsList);
+      await saveKey(KEYS.activityRecords, performedActivities);
+      await saveKey(KEYS.workRecordsPerformed, performedWork);
+      await saveKey(KEYS.log, activityLog);
+      renderMembers();
+      renderFund();
+      renderAnnounce();
+      renderItems();
+      renderBorrow();
+      renderDeliverySelects();
+      renderDelivery();
+      renderRules();
+      ['sell','airdrop','box'].forEach(t=>renderActivities(t));
+      ['steal','sellDrug'].forEach(t=>renderWork(t));
+      renderPoints();
+      ['sell','airdrop','box'].forEach(t=>renderPerformedActivities(t));
+      ['steal','sellDrug'].forEach(t=>renderPerformedWork(t));
+      renderStory();
+      renderAccounts();
+      renderLog();
+      alert('นำเข้าข้อมูลเสร็จเรียบร้อยแล้ว');
+    } catch (err) {
+      alert('ไม่สามารถนำเข้าข้อมูลได้: ไฟล์ไม่ถูกต้อง');
+      console.error(err);
+    }
+  };
+  reader.readAsText(file);
+}
+
 async function loadAll(){
   members = await loadKey(KEYS.members, []);
   fundEntries = await loadKey(KEYS.fund, []);
@@ -1657,7 +1764,7 @@ function renderMembers(){
       const weapons = weaponPairs(m);
       const admin = isAdmin();
       return `
-      <div class="member-card" ${admin?`draggable="true" ondragstart="dragStart(event,'${m.id}')" ondragover="dragOverCard(event)" ondrop="dropOnCard(event,'${m.id}')"`:''}>
+      <div class="member-card" ${admin?`onclick="startEditMember('${m.id}')" draggable="true" ondragstart="dragStart(event,'${m.id}')" ondragover="dragOverCard(event)" ondrop="dropOnCard(event,'${m.id}')"` : ''}>
         <span class="order-badge admin-only" title="ลากเพื่อย้ายลำดับ">☰ #${idx+1}</span>
         <span class="order-badge no-admin-only">#${idx+1}</span>
         <button class="del admin-only" onclick="deleteMember('${m.id}')">✕</button>
@@ -1770,6 +1877,7 @@ function renderStory(){
 
 async function addMember(){
   if(!isAdmin()){ alert('บัญชีนี้ไม่มีสิทธิ์เพิ่มสมาชิก'); return; }
+  const wasEdit = !!editingMemberId;
   const name = document.getElementById('memberName').value.trim();
   const role = document.getElementById('memberRole').value;
   const phone = document.getElementById('memberPhone').value.trim();
@@ -1783,8 +1891,24 @@ async function addMember(){
   const level3 = document.getElementById('memberLevel3').value;
   const note = document.getElementById('memberNote').value.trim();
   if(!name){ alert('กรอกชื่อในเกมของสมาชิก'); return; }
-  const maxOrder = members.reduce((m,x)=> typeof x.order==='number' ? Math.max(m,x.order) : m, 0);
-  members.push({ id: uid(), name, role, phone, ic, birthday, weapon1, level1, weapon2, level2, weapon3, level3, note, order: maxOrder+1, image: pendingMemberImage, date: nowStr(), ts: Date.now() });
+  if(editingMemberId){
+    // update existing member
+    const m = members.find(x=>x.id===editingMemberId);
+    if(m){
+      m.name = name; m.role = role; m.phone = phone; m.ic = ic; m.birthday = birthday;
+      m.weapon1 = weapon1; m.level1 = level1; m.weapon2 = weapon2; m.level2 = level2; m.weapon3 = weapon3; m.level3 = level3;
+      m.note = note; m.image = pendingMemberImage || m.image; m.ts = Date.now();
+      await saveKey(KEYS.members, members);
+      await logAction(`แก้ไขสมาชิก: ${m.name}`);
+      // exit edit mode
+      editingMemberId = null;
+      document.getElementById('memberSaveButton').textContent = 'เพิ่มสมาชิก';
+      document.getElementById('memberCancelButton').style.display = 'none';
+    }
+  } else {
+    const maxOrder = members.reduce((m,x)=> typeof x.order==='number' ? Math.max(m,x.order) : m, 0);
+    members.push({ id: uid(), name, role, phone, ic, birthday, weapon1, level1, weapon2, level2, weapon3, level3, note, order: maxOrder+1, image: pendingMemberImage, date: nowStr(), ts: Date.now() });
+  }
   document.getElementById('memberName').value = '';
   document.getElementById('memberPhone').value = '';
   document.getElementById('memberIC').value = '';
@@ -1800,12 +1924,59 @@ async function addMember(){
   pendingMemberImage = null;
   renderMembers();
   renderStory();
-  await saveKey(KEYS.members, members);
-  await logAction(`เพิ่มสมาชิกใหม่: ${name} (${role})`);
+  if(!wasEdit){
+    await saveKey(KEYS.members, members);
+    await logAction(`เพิ่มสมาชิกใหม่: ${name} (${role})`);
+  } else {
+    // already saved/logged in edit branch
+    await saveKey(KEYS.members, members);
+  }
+}
+function startEditMember(id){
+  if(!isAdmin()) return;
+  const m = members.find(x=>x.id===id);
+  if(!m) return;
+  editingMemberId = id;
+  document.getElementById('memberName').value = m.name || '';
+  document.getElementById('memberRole').value = m.role || 'สมาชิก';
+  document.getElementById('memberPhone').value = m.phone || '';
+  document.getElementById('memberIC').value = m.ic || '';
+  document.getElementById('memberBirthday').value = m.birthday || '';
+  document.getElementById('memberWeapon1').value = m.weapon1 || '';
+  document.getElementById('memberLevel1').value = m.level1 || '1';
+  document.getElementById('memberWeapon2').value = m.weapon2 || '';
+  document.getElementById('memberLevel2').value = m.level2 || '1';
+  document.getElementById('memberWeapon3').value = m.weapon3 || '';
+  document.getElementById('memberLevel3').value = m.level3 || '1';
+  document.getElementById('memberNote').value = m.note || '';
+  if(m.image) pendingMemberImage = m.image;
+  if(pendingMemberImage) document.getElementById('memberUploadBox').innerHTML = `<img class="upload-preview" src="${pendingMemberImage}"><input type="file" accept="image/*" id="memberImage" onchange="previewMemberImage(event)">✓ เปลี่ยนรูป`;
+  document.getElementById('memberSaveButton').textContent = 'อัปเดตสมาชิก';
+  document.getElementById('memberCancelButton').style.display = 'inline-block';
+}
+function cancelEditMember(){
+  editingMemberId = null;
+  document.getElementById('memberName').value = '';
+  document.getElementById('memberPhone').value = '';
+  document.getElementById('memberIC').value = '';
+  document.getElementById('memberBirthday').value = '';
+  document.getElementById('memberWeapon1').value = '';
+  document.getElementById('memberLevel1').value = '1';
+  document.getElementById('memberWeapon2').value = '';
+  document.getElementById('memberLevel2').value = '1';
+  document.getElementById('memberWeapon3').value = '';
+  document.getElementById('memberLevel3').value = '1';
+  document.getElementById('memberNote').value = '';
+  pendingMemberImage = null;
+  document.getElementById('memberUploadBox').innerHTML = `📷 อัปโหลดรูป<input type="file" accept="image/*" id="memberImage" onchange="previewMemberImage(event)">`;
+  document.getElementById('memberSaveButton').textContent = 'เพิ่มสมาชิก';
+  document.getElementById('memberCancelButton').style.display = 'none';
 }
 async function deleteMember(id){
   if(!isAdmin()){ alert('บัญชีนี้ไม่มีสิทธิ์ลบสมาชิก'); return; }
   const target = members.find(m=>m.id===id);
+  if(!target) return;
+  if(!confirm(`ยืนยันการลบสมาชิก ${target.name} ? การกระทำนี้ไม่สามารถยกเลิกได้`)) return;
   members = members.filter(m=>m.id!==id);
   renderMembers();
   renderStory();
@@ -2152,6 +2323,17 @@ function populateActivityForm(type){
   const memberSel = document.getElementById('actMember-'+type);
   const itemsDiv = document.getElementById('actItems-'+type);
   if(memberSel){
+    // insert a simple filter input above the select to make searching easier
+    const parent = memberSel.parentNode;
+    if(parent && !parent.querySelector('.member-filter')){
+      const inp = document.createElement('input');
+      inp.type = 'text'; inp.placeholder = 'ค้นหาสมาชิก...'; inp.className = 'member-filter';
+      inp.style.marginBottom = '8px'; inp.addEventListener('input', (e)=>{
+        const q = (e.target.value||'').toLowerCase();
+        memberSel.innerHTML = members.filter(m=> (m.name||'').toLowerCase().includes(q)).map(m=>`<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
+      });
+      parent.insertBefore(inp, memberSel);
+    }
     memberSel.innerHTML = members.map(m=>`<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
   }
   if(!itemsDiv) return;
@@ -2219,6 +2401,20 @@ async function performActivity(type){
   const rec = { id: uid(), memberIds, location, items, video: videoData, date: nowStr(), ts: Date.now() };
   if(!performedActivities[type]) performedActivities[type]=[];
   performedActivities[type].push(rec);
+  // award points per member for activities: sell=1, airdrop=2, box=1
+  try{
+    let ptsPer = 0;
+    if(type === 'airdrop') ptsPer = 2;
+    else if(type === 'sell' || type === 'box') ptsPer = 1;
+    if(ptsPer > 0){
+      memberIds.forEach(mid=>{
+        pointsList.push({ id: uid(), memberId: mid, points: ptsPer, date: nowStr(), ts: Date.now(), source: type, activityId: rec.id });
+      });
+      await saveKey(KEYS.points, pointsList);
+      renderPoints();
+      await logAction(`ให้แต้มกิจกรรม (${type}): ${ptsPer} แต้ม x${memberIds.length}`);
+    }
+  }catch(e){console.error('points assign error', e);}
   // update inventory: add produced items
   items.forEach(itm => {
     const inv = inventory.find(x=>x.id===itm.itemId);
