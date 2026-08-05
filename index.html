@@ -1474,6 +1474,11 @@ window.addEventListener('DOMContentLoaded', async ()=>{
   }
   // prepare hover submenus for activities/work nav items
   createNavSubmenus();
+  const logoutBtn = document.getElementById('logoutBtn');
+  if(logoutBtn){
+    logoutBtn.removeAttribute('onclick');
+    logoutBtn.addEventListener('click', logout);
+  }
 });
 
 // ---------- Tabs ----------
