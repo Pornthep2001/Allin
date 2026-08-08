@@ -713,27 +713,6 @@
   <!-- ===== ACTIVITIES TAB ===== -->
   <section class="panel" id="panel-activities">
     <div class="card">
-      <h2>กิจกรรม <span class="eyebrow">Activities</span></h2>
-      <div class="form-grid">
-            <div class="field">
-              <label>ประเภทกิจกรรม</label>
-              <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <button class="ghost" id="actBtn-sell" onclick="setActivityView('sell')">ขายสาร</button>
-                <button class="ghost" id="actBtn-airdrop" onclick="setActivityView('airdrop')">แอร์ดรอป</button>
-                <button class="ghost" id="actBtn-box" onclick="setActivityView('box')">กล่องพิเศษ</button>
-              </div>
-            </div>
-        <div class="field">
-          <label>ชื่อกิจกรรม / รายการ</label>
-          <input type="text" id="actTitle" placeholder="เช่น ขายสาร 50%">
-        </div>
-      </div>
-      <div class="actions">
-        <button class="primary" onclick="addActivity()">เพิ่มกิจกรรม</button>
-      </div>
-    </div>
-
-    <div class="card">
       <h2>รายการกิจกรรม</h2>
         <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
           <button class="ghost" onclick="setActivityView('sell')">ขายสาร</button>
@@ -841,16 +820,8 @@
         </div>
         <div class="form-grid" style="margin-top:14px;">
           <div class="field">
-            <label>ทะเบียนรถ / หมายเลขรถ</label>
-            <input type="text" id="actVehicle-car" placeholder="เช่น กจ 1234">
-          </div>
-          <div class="field">
             <label>จำนวนคัน</label>
             <input type="number" id="actCarCount-car" min="1" placeholder="เช่น 1" value="1">
-          </div>
-          <div class="field" style="grid-column:1/-1;">
-            <label>เส้นทาง / จุดขึ้น-ลง</label>
-            <input type="text" id="actLocation-car" placeholder="เช่น ทาง A-B / จุดจอด ก.">
           </div>
           <div class="field" style="grid-column:1/-1;">
             <label>รายละเอียดเพิ่มเติม</label>
@@ -949,26 +920,6 @@
 
   <!-- ===== WORK TAB ===== -->
   <section class="panel" id="panel-work">
-    <div class="card">
-      <h2>งานดำ <span class="eyebrow">Black Ops</span></h2>
-      <div class="form-grid">
-        <div class="field">
-          <label>ประเภทงาน</label>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button class="ghost" id="workBtn-steal" onclick="setWorkView('steal')">จกปูน/ลิค</button>
-            <button class="ghost" id="workBtn-sellDrug" onclick="setWorkView('sellDrug')">ขายยา</button>
-          </div>
-        </div>
-        <div class="field">
-          <label>รายละเอียด</label>
-          <input type="text" id="workTitle" placeholder="เช่น แย่งพื้นที่บอส">
-        </div>
-      </div>
-      <div class="actions">
-        <button class="primary" onclick="addWork()">เพิ่มงาน</button>
-      </div>
-    </div>
-
     <div class="card">
       <h2>รายการงานดำ</h2>
       <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
@@ -2767,7 +2718,7 @@ function renderCarSignupTab(){
           const cls = received ? 'received' : (signed ? 'accepted' : '');
           const pillText = received ? '✅ ได้รับแล้ว' : (signed ? '🕒 รอรับรถ' : '— ยังไม่ลงชื่อ');
           let metaLine = '';
-          if(received) metaLine = `<div class="meta">🚗 ทะเบียน ${escapeHtml(s.vehicle||'-')}</div>`;
+          if(received) metaLine = `<div class="meta">🚗 จำนวน ${escapeHtml(String(s.carCount||1))} คัน</div>`;
           else if(signed) metaLine = `<div class="meta">ลงชื่อเมื่อ ${escapeHtml(s.date)}</div>`;
           return `
             <div class="car-signup-card ${cls}">
@@ -2848,11 +2799,8 @@ async function fulfillCarSignup(){
   if(!signup){ alert('ไม่พบรายการลงชื่อ'); return; }
 
   const carCount = parseInt((document.getElementById('actCarCount-car')||{value:0}).value) || 0;
-  const vehicle = document.getElementById('actVehicle-car').value.trim();
-  const location = document.getElementById('actLocation-car').value.trim();
   const note = document.getElementById('actNote-car').value.trim();
   if(carCount <= 0){ alert('กรอกจำนวนคันรถที่รับ'); return; }
-  if(!vehicle){ alert('กรอกทะเบียนหรือหมายเลขรถ'); return; }
 
   const mediaFile = document.getElementById('actVideo-car').files[0];
   let mediaData = null, mediaType = null;
@@ -2862,15 +2810,15 @@ async function fulfillCarSignup(){
   }
 
   const rec = {
-    id: uid(), memberIds: [signup.memberId], location, items: [], mediaData, mediaType,
-    date: nowStr(), ts: Date.now(), carCount, vehicle, note,
+    id: uid(), signupId: signup.id, memberIds: [signup.memberId], items: [], mediaData, mediaType,
+    date: nowStr(), ts: Date.now(), carCount, note,
     acceptedMemberIds: [signup.memberId], rejectedMemberIds: []
   };
   if(!performedActivities.car) performedActivities.car = [];
   performedActivities.car.push(rec);
 
   signup.status = 'received';
-  signup.vehicle = vehicle;
+  signup.carCount = carCount;
   signup.deliveryDate = rec.date;
 
   pointsList.push({ id: uid(), memberId: signup.memberId, points: 1, date: nowStr(), ts: Date.now(), source: 'car', activityId: rec.id });
@@ -2878,11 +2826,9 @@ async function fulfillCarSignup(){
   await saveKey(KEYS.points, pointsList);
   await saveKey(KEYS.carSignups, carSignups);
   await saveKey(KEYS.activityRecords, performedActivities);
-  await logAction(`บันทึกรับรถ 100 โล: ${memberName(signup.memberId)} ทะเบียน ${vehicle}`);
+  await logAction(`บันทึกรับรถ 100 โล: ${memberName(signup.memberId)} จำนวน ${carCount} คัน`);
 
   renderPoints();
-  document.getElementById('actVehicle-car').value = '';
-  document.getElementById('actLocation-car').value = '';
   document.getElementById('actNote-car').value = '';
   document.getElementById('actVideo-car').value = '';
   document.getElementById('actCarCount-car').value = '1';
@@ -2918,11 +2864,13 @@ function renderPerformedActivities(type){
 
 function renderPerformedActivityRow(type, r){
   const memberNames = (r.memberIds || []).map(id=>memberName(id)).join(', ') || 'ไม่ระบุสมาชิก';
+  let title = escapeHtml(r.location || 'ไม่ระบุสถานที่');
   let detail = '';
+  const editHandler = type === 'car' ? `editCarPerformedActivity('${r.id}')` : `startEditPerformedActivity('${type}','${r.id}')`;
+  const deleteHandler = type === 'car' ? `deleteCarPerformedActivity('${r.id}')` : `deletePerformedActivity('${type}','${r.id}')`;
   if(type === 'car'){
-    detail += `<div class="meta">รับ: ${escapeHtml((r.acceptedMemberIds||[]).map(id=>memberName(id)).join(', ') || 'ไม่มี')}</div>`;
-    detail += `<div class="meta">ไม่รับ: ${escapeHtml((r.rejectedMemberIds||[]).map(id=>memberName(id)).join(', ') || 'ไม่มี')}</div>`;
-    detail += `<div class="meta">ทะเบียน: ${escapeHtml(r.vehicle || 'ไม่ระบุ')} · คัน: ${escapeHtml(String(r.carCount || '1'))}</div>`;
+    title = `🚗 ${escapeHtml(memberNames)}`;
+    detail += `<div class="meta">จำนวนคัน: ${escapeHtml(String(r.carCount || '1'))}</div>`;
     if(r.note) detail += `<div class="meta">${escapeHtml(r.note)}</div>`;
   } else {
     detail += `<div class="meta">สมาชิก: ${escapeHtml(memberNames)}</div>`;
@@ -2938,15 +2886,15 @@ function renderPerformedActivityRow(type, r){
     }
   }
   return `
-    <div class="row-item" ${isAdmin() ? `onclick="startEditPerformedActivity('${type}','${r.id}')"` : ''}>
+    <div class="row-item" ${isAdmin() ? `onclick="${editHandler}"` : ''}>
       <div style="flex:1;">
-        <div style="font-weight:700; color:var(--gold-soft);">${escapeHtml(r.location || 'ไม่ระบุสถานที่')}</div>
+        <div style="font-weight:700; color:var(--gold-soft);">${title}</div>
         ${detail}
         ${mediaHtml}
         <div class="meta">${escapeHtml(r.date)}</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
-        ${isAdmin() ? `<button class="ghost" onclick="event.stopPropagation(); deletePerformedActivity('${type}','${r.id}')">ลบ</button>` : ''}
+        ${isAdmin() ? `<button class="ghost" onclick="event.stopPropagation(); ${deleteHandler}">ลบ</button>` : ''}
       </div>
     </div>`;
 }
@@ -3048,6 +2996,75 @@ function startEditPerformedActivity(type,id){
     renderPerformedActivities(type);
   });
   logAction(`แก้ไขประวัติการเล่น (${type}): ${id}`);
+}
+
+// ---------- CAR 100 โล: dedicated edit / delete for history ----------
+function findCarSignupForRecord(r){
+  if(r.signupId){
+    const s = carSignups.find(x=>x.id===r.signupId);
+    if(s) return s;
+  }
+  // fallback for legacy records without a stored signupId
+  const memberId = (r.memberIds||[])[0];
+  if(!memberId) return null;
+  const monthKey = carMonthKey(new Date(r.ts));
+  return carSignups.find(s=>s.memberId===memberId && s.month===monthKey && s.status==='received') || null;
+}
+
+async function editCarPerformedActivity(id){
+  if(!isAdmin()) return;
+  const arr = performedActivities.car || [];
+  const r = arr.find(x=>x.id===id);
+  if(!r) return;
+  const newCount = prompt('จำนวนคันรถที่รับ:', String(r.carCount || 1));
+  if(newCount === null) return;
+  const parsedCount = parseInt(newCount) || 0;
+  if(parsedCount <= 0){ alert('จำนวนคันต้องมากกว่า 0'); return; }
+  const newNote = prompt('รายละเอียดเพิ่มเติม:', r.note || '');
+  if(newNote === null) return;
+
+  r.carCount = parsedCount;
+  r.note = newNote.trim();
+
+  const signup = findCarSignupForRecord(r);
+  if(signup) signup.carCount = parsedCount;
+
+  await saveKey(KEYS.activityRecords, performedActivities);
+  if(signup) await saveKey(KEYS.carSignups, carSignups);
+  renderPerformedActivities('car');
+  renderCarSignupTab();
+  await logAction(`แก้ไขประวัติการรับรถ 100 โล: ${memberName((r.memberIds||[])[0])}`);
+}
+
+async function deleteCarPerformedActivity(id){
+  if(!isAdmin()){ alert('บัญชีนี้ไม่มีสิทธิ์ลบรายการ'); return; }
+  const arr = performedActivities.car || [];
+  const r = arr.find(x=>x.id===id);
+  if(!r) return;
+  if(!confirm('ยืนยันการลบประวัติการรับรถรายการนี้? สถานะการลงชื่อของสมาชิกจะถูกย้อนกลับเป็น "รอรับรถ"')) return;
+
+  performedActivities.car = arr.filter(x=>x.id!==id);
+
+  // reset the linked signup back to pending so it doesn't stay stuck as "received"
+  const signup = findCarSignupForRecord(r);
+  if(signup){
+    signup.status = 'pending';
+    delete signup.carCount;
+    delete signup.deliveryDate;
+    delete signup.vehicle;
+  }
+
+  // remove any points awarded for this fulfillment
+  pointsList = pointsList.filter(p=> !(p.source==='car' && p.activityId===r.id));
+
+  await saveKey(KEYS.activityRecords, performedActivities);
+  await saveKey(KEYS.carSignups, carSignups);
+  await saveKey(KEYS.points, pointsList);
+
+  renderPerformedActivities('car');
+  renderCarSignupTab();
+  renderPoints();
+  await logAction(`ลบประวัติการรับรถ 100 โล: ${memberName((r.memberIds||[])[0])}`);
 }
 
 function populateWorkForm(type){
