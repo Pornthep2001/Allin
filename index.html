@@ -154,6 +154,19 @@
   .car-member-card button{border:none;border-radius:999px;cursor:pointer;padding:8px 12px;font-size:13px;background:rgba(255,255,255,0.06);color:var(--ink);transition:all .2s ease;}
   .car-member-card button.active{background:var(--gold-soft);color:#1a1206;}
   .car-member-card button:hover{background:rgba(212,175,55,0.14);}
+  .car-month-nav{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:14px;}
+  .car-month-nav .ghost{white-space:nowrap;}
+  .car-month-label{font-family:'Playfair Display',serif;font-weight:700;font-size:18px;color:var(--gold-soft);min-width:160px;text-align:center;}
+  .car-signup-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;}
+  .car-signup-card{background:rgba(255,255,255,0.04);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;}
+  .car-signup-card.accepted{border-color:var(--gold);background:rgba(212,175,55,0.10);}
+  .car-signup-card.received{border-color:#5ea86b;background:rgba(93,168,107,0.14);}
+  .car-signup-card .member-name{font-weight:700;color:var(--ink);}
+  .car-signup-card .meta{font-size:12px;color:var(--ink-dim);}
+  .car-signup-card button{border:none;border-radius:999px;cursor:pointer;padding:8px 12px;font-size:13px;background:rgba(255,255,255,0.06);color:var(--ink);transition:all .2s ease;}
+  .car-signup-card button.active{background:var(--gold-soft);color:#1a1206;}
+  .car-signup-card button:hover{background:rgba(212,175,55,0.14);}
+  .car-signup-card button:disabled{opacity:0.6;cursor:not-allowed;}
   .activity-media-preview{width:100%;max-width:360px;border-radius:12px;margin-top:10px;}
   input:focus,select:focus,textarea:focus{border-color:var(--gold);}
   select option{background:#16281f;color:var(--ink);}
@@ -727,41 +740,54 @@
 
     <section class="panel" id="panel-car">
       <div class="card">
-        <h2>รถ 100 โล <span class="eyebrow">ลงชื่อรับรถ</span></h2>
-        <p>ใช้หน้าตรงนี้เพื่อบันทึกการลงชื่อรับรถ 100 โล และบันทึกเส้นทาง / เลขทะเบียน / VDO การขึ้นรถ</p>
-          <div class="form-grid">
-            <div class="field" style="grid-column:1/3;">
-              <label>สมาชิกลงชื่อรับรถ</label>
-              <div class="car-member-decision" id="carMemberDecisionList"></div>
-            </div>
-            <div class="field" style="grid-column:3/-1;">
-              <label>จำนวนคัน</label>
-              <input type="number" id="actCarCount-car" min="1" placeholder="เช่น 1" value="1">
-            </div>
-            <div class="field" style="grid-column:1/3;">
-              <label>ทะเบียนรถ / หมายเลขรถ</label>
-              <input type="text" id="actVehicle-car" placeholder="เช่น กจ 1234">
-            </div>
-            <div class="field" style="grid-column:3/-1;">
-              <label>เส้นทาง / จุดขึ้น-ลง</label>
-              <input type="text" id="actLocation-car" placeholder="เช่น ทาง A-B / จุดจอด ก.">
-            </div>
-            <div class="field" style="grid-column:1/-1;">
-              <label>รายละเอียดเพิ่มเติม</label>
-              <input type="text" id="actNote-car" placeholder="เช่น รับรถสำเร็จ พร้อมเดินทาง">
-            </div>
-            <div class="field" style="grid-column:1/-1;">
-              <label>แนบรูปหรือ VDO รับรถ (ถ้ามี)</label>
-              <input type="file" accept="image/*,video/*" id="actVideo-car">
-            </div>
-          </div>
-          <div class="actions">
-            <button class="primary" onclick="performActivity('car')">บันทึกการลงชื่อ</button>
-          </div>
+        <h2>รถ 100 โล <span class="eyebrow">ลงชื่อรับรถรายเดือน</span></h2>
+        <p>สมาชิกลงชื่อแจ้งความประสงค์รับรถ 100 โลของแต่ละเดือนได้ที่นี่ ดูรายชื่อผู้ลงชื่อของเดือนนั้น ๆ ได้ทันที</p>
+        <div class="car-month-nav">
+          <button type="button" class="ghost" onclick="navigateCarMonth(-1)">‹ เดือนก่อน</button>
+          <div class="car-month-label" id="carMonthLabel">—</div>
+          <button type="button" class="ghost" onclick="navigateCarMonth(1)">เดือนถัดไป ›</button>
+        </div>
+        <div class="hint" id="carMonthHint" style="margin-top:10px;"></div>
+        <div class="car-signup-grid" id="carSignupGrid" style="margin-top:14px;"></div>
       </div>
+
+      <div class="card admin-only">
+        <h2>บันทึกการรับรถจริง <span class="eyebrow">Fulfillment</span></h2>
+        <p>เมื่อสมาชิกที่ลงชื่อไว้ได้รับรถแล้ว บันทึกทะเบียนและรายละเอียดที่นี่</p>
+        <div class="form-grid">
+          <div class="field" style="grid-column:1/-1;">
+            <label>สมาชิกที่ลงชื่อไว้ (เดือนที่กำลังดูอยู่)</label>
+            <select id="carFulfillMember"></select>
+          </div>
+          <div class="field">
+            <label>ทะเบียนรถ / หมายเลขรถ</label>
+            <input type="text" id="actVehicle-car" placeholder="เช่น กจ 1234">
+          </div>
+          <div class="field">
+            <label>จำนวนคัน</label>
+            <input type="number" id="actCarCount-car" min="1" placeholder="เช่น 1" value="1">
+          </div>
+          <div class="field" style="grid-column:1/-1;">
+            <label>เส้นทาง / จุดขึ้น-ลง</label>
+            <input type="text" id="actLocation-car" placeholder="เช่น ทาง A-B / จุดจอด ก.">
+          </div>
+          <div class="field" style="grid-column:1/-1;">
+            <label>รายละเอียดเพิ่มเติม</label>
+            <input type="text" id="actNote-car" placeholder="เช่น รับรถสำเร็จ พร้อมเดินทาง">
+          </div>
+          <div class="field" style="grid-column:1/-1;">
+            <label>แนบรูปหรือ VDO รับรถ (ถ้ามี)</label>
+            <input type="file" accept="image/*,video/*" id="actVideo-car">
+          </div>
+        </div>
+        <div class="actions">
+          <button class="primary" onclick="fulfillCarSignup()">บันทึกว่าได้รับรถแล้ว</button>
+        </div>
+      </div>
+
       <div class="card">
-        <h2>ประวัติลงชื่อรับรถ 100 โล</h2>
-        <div class="hint">รายการด้านล่างจะแสดงผู้ลงชื่อ เส้นทาง และ VDO หากแนบไว้</div>
+        <h2>ประวัติการรับรถ 100 โล</h2>
+        <div class="hint">รายการด้านล่างจะแสดงผู้ที่ได้รับรถจริง พร้อมทะเบียนและ VDO หากแนบไว้ เรียงตามเดือน</div>
         <div class="list" id="activityPerformedList-car"></div>
       </div>
     </section>
@@ -1249,7 +1275,8 @@ const KEYS = {
   points: 'allin-points',
   activityRecords: 'allin-activity-performed',
   workRecordsPerformed: 'allin-work-performed',
-  log: 'allin-activity-log'
+  log: 'allin-activity-log',
+  carSignups: 'allin-car-signups'
 };
 let members = [];
 let fundEntries = [];
@@ -1272,8 +1299,9 @@ let editingItemId = null;
 let editingDeliveryId = null;
 let currentActivityView = 'sell';
 let currentWorkView = 'steal';
-let selectedMembersByActivity = { sell: [], airdrop: [], box: [], car: [] };
-let carMemberDecision = {}; // memberId -> 'accepted' | 'rejected'
+let selectedMembersByActivity = { sell: [], airdrop: [], box: [] };
+let carSignups = []; // { id, memberId, month:'YYYY-MM', date, ts, status:'pending'|'received', vehicle, deliveryDate }
+let currentCarMonth = null; // 'YYYY-MM'
 
 // ---------- Login gate ----------
 // Session state is persisted in localStorage so a logged-in user can
@@ -1516,6 +1544,9 @@ function uid(){ return Date.now().toString(36) + Math.random().toString(36).slic
 function nowStr(){
   return new Date().toLocaleString('th-TH', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
 }
+function fmt(n){
+  return (Number(n) || 0).toLocaleString('th-TH');
+}
 function escapeHtml(str){
   const div = document.createElement('div');
   div.textContent = str ?? '';
@@ -1751,6 +1782,7 @@ async function loadAll(){
   performedActivities = await loadKey(KEYS.activityRecords, { sell: [], airdrop: [], box: [], car: [] });
   performedWork = await loadKey(KEYS.workRecordsPerformed, { steal: [], sellDrug: [] });
   activityLog = await loadKey(KEYS.log, []);
+  carSignups = await loadKey(KEYS.carSignups, []);
   if(ensureMemberOrder()){ await saveKey(KEYS.members, members); }
   renderMembers();
   renderFund();
@@ -1761,12 +1793,13 @@ async function loadAll(){
   renderDelivery();
   renderRules();
   // render all activity/work sub-views so lists are populated
-  ['sell','airdrop','box','car'].forEach(t=>renderActivities(t));
+  ['sell','airdrop','box'].forEach(t=>renderActivities(t));
   ['steal','sellDrug'].forEach(t=>renderWork(t));
   renderPoints();
   // render performed activity/work records
-  ['sell','airdrop','box','car'].forEach(t=>renderPerformedActivities(t));
+  ['sell','airdrop','box'].forEach(t=>renderPerformedActivities(t));
   ['steal','sellDrug'].forEach(t=>renderPerformedWork(t));
+  renderCarSignupTab();
   renderStory();
   renderAccounts();
   renderLog();
@@ -2466,18 +2499,13 @@ function populateActivityForm(type){
     renderMemberPickerList(type);
   }
   if(type === 'car'){
-    renderCarMemberDecision();
-    renderCarHistory();
+    renderCarSignupTab();
     return;
   }
   if(!itemsDiv) return;
   // Different rendering per activity type
   if(type === 'sell'){
     itemsDiv.innerHTML = '<div class="hint">ใช้ฟิลด์ "จำนวนเงินแดงที่ได้รับ" ด้านบน</div>';
-    return;
-  }
-  if(type === 'car'){
-    itemsDiv.innerHTML = '<div class="hint">ไม่ต้องเลือกของสำหรับกิจกรรมนี้</div>';
     return;
   }
   // airdrop / box: show inventory with thumbnails
@@ -2578,47 +2606,146 @@ function renderMemberPickerList(type){
   list.innerHTML = candidates.map(m=>`<div class="member-picker-item" onclick="toggleMemberPickerSelection('${type}','${m.id}')">${escapeHtml(m.name)}</div>`).join('');
 }
 
-function renderCarMemberDecision(){
-  const wrapper = document.getElementById('carMemberDecisionList');
-  if(!wrapper) return;
-  if(members.length === 0){
-    wrapper.innerHTML = '<div class="empty"><span class="icon">👥</span>ยังไม่มีสมาชิกให้เลือก</div>';
-    return;
-  }
-  wrapper.innerHTML = members.map(m => {
-    const state = carMemberDecision[m.id] || '';
-    return `
-      <div class="car-member-card ${state === 'accepted' ? 'accepted' : ''} ${state === 'rejected' ? 'rejected' : ''}">
-        <div class="member-name">${escapeHtml(m.name)}</div>
-        <div class="member-actions">
-          <button type="button" class="${state==='accepted'?'active':''}" onclick="event.stopPropagation(); setCarMemberDecision('${m.id}','accepted')">เอา</button>
-          <button type="button" class="${state==='rejected'?'active':''}" onclick="event.stopPropagation(); setCarMemberDecision('${m.id}','rejected')">ไม่เอา</button>
-        </div>
-      </div>`;
-  }).join('');
+// ---------- CAR 100 โล: monthly signup roster ----------
+function carMonthKey(date){
+  const y = date.getFullYear();
+  const m = String(date.getMonth()+1).padStart(2,'0');
+  return `${y}-${m}`;
+}
+function carMonthLabelFromKey(key){
+  const parts = (key||'').split('-').map(Number);
+  const y = parts[0], m = parts[1];
+  if(!y || !m) return '—';
+  const d = new Date(y, m-1, 1);
+  return d.toLocaleDateString('th-TH', { month:'long', year:'numeric' });
+}
+function initCarMonth(){
+  if(!currentCarMonth) currentCarMonth = carMonthKey(new Date());
+}
+function navigateCarMonth(delta){
+  initCarMonth();
+  const parts = currentCarMonth.split('-').map(Number);
+  const d = new Date(parts[0], parts[1]-1+delta, 1);
+  currentCarMonth = carMonthKey(d);
+  renderCarSignupTab();
 }
 
-function setCarMemberDecision(id, choice){
-  if(choice !== 'accepted' && choice !== 'rejected') return;
-  if(carMemberDecision[id] === choice){
-    delete carMemberDecision[id];
+function renderCarSignupTab(){
+  initCarMonth();
+  const label = document.getElementById('carMonthLabel');
+  if(label) label.textContent = carMonthLabelFromKey(currentCarMonth);
+
+  const grid = document.getElementById('carSignupGrid');
+  const signupsThisMonth = carSignups.filter(s=>s.month===currentCarMonth);
+  if(grid){
+    if(members.length === 0){
+      grid.innerHTML = '<div class="empty"><span class="icon">👥</span>ยังไม่มีสมาชิกให้เลือก</div>';
+    } else {
+      grid.innerHTML = members.map(m=>{
+        const s = signupsThisMonth.find(x=>x.memberId===m.id);
+        const signed = !!s;
+        const received = signed && s.status === 'received';
+        const cls = received ? 'received' : (signed ? 'accepted' : '');
+        let metaLine = '';
+        if(received) metaLine = `<div class="meta">🚗 ได้รับรถแล้ว (${escapeHtml(s.vehicle||'')})</div>`;
+        else if(signed) metaLine = `<div class="meta">✅ ลงชื่อเมื่อ ${escapeHtml(s.date)}</div>`;
+        return `
+          <div class="car-signup-card ${cls}">
+            <div class="member-name">${escapeHtml(m.name)}</div>
+            ${metaLine}
+            <button type="button" class="${signed?'active':''}" onclick="event.stopPropagation(); toggleCarSignup('${m.id}')" ${received?'disabled':''}>${received ? 'ได้รับแล้ว' : (signed ? 'ยกเลิกลงชื่อ' : 'ลงชื่อรับรถ')}</button>
+          </div>`;
+      }).join('');
+    }
+  }
+
+  const hint = document.getElementById('carMonthHint');
+  if(hint){
+    const received = signupsThisMonth.filter(s=>s.status==='received').length;
+    hint.textContent = `มีผู้ลงชื่อประสงค์รับรถ ${signupsThisMonth.length} คนในเดือนนี้ (ได้รับแล้ว ${received} คน)`;
+  }
+
+  renderCarFulfillSelect();
+  renderPerformedActivities('car');
+}
+
+async function toggleCarSignup(memberId){
+  initCarMonth();
+  const idx = carSignups.findIndex(s=>s.memberId===memberId && s.month===currentCarMonth);
+  if(idx >= 0){
+    if(carSignups[idx].status === 'received'){
+      alert('สมาชิกคนนี้ได้รับรถของเดือนนี้ไปแล้ว ไม่สามารถยกเลิกลงชื่อได้');
+      return;
+    }
+    carSignups.splice(idx,1);
+    await logAction(`ยกเลิกลงชื่อรับรถ 100 โล: ${memberName(memberId)} (${carMonthLabelFromKey(currentCarMonth)})`);
   } else {
-    carMemberDecision[id] = choice;
+    carSignups.push({ id: uid(), memberId, month: currentCarMonth, date: nowStr(), ts: Date.now(), status: 'pending' });
+    await logAction(`ลงชื่อรับรถ 100 โล: ${memberName(memberId)} (${carMonthLabelFromKey(currentCarMonth)})`);
   }
-  renderCarMemberDecision();
+  await saveKey(KEYS.carSignups, carSignups);
+  renderCarSignupTab();
 }
 
-function getCarAcceptedMembers(){
-  return Object.keys(carMemberDecision).filter(id => carMemberDecision[id] === 'accepted');
+function renderCarFulfillSelect(){
+  const sel = document.getElementById('carFulfillMember');
+  if(!sel) return;
+  const pending = carSignups.filter(s=>s.month===currentCarMonth && s.status!=='received');
+  if(pending.length === 0){
+    sel.innerHTML = '<option value="">— ไม่มีผู้ลงชื่อรอรับรถในเดือนนี้ —</option>';
+  } else {
+    sel.innerHTML = '<option value="">— เลือกสมาชิกที่ลงชื่อไว้ —</option>' +
+      pending.map(s=>`<option value="${s.id}">${escapeHtml(memberName(s.memberId))}</option>`).join('');
+  }
 }
 
-function getCarRejectedMembers(){
-  return Object.keys(carMemberDecision).filter(id => carMemberDecision[id] === 'rejected');
-}
+async function fulfillCarSignup(){
+  if(!isAdmin()){ alert('บัญชีนี้ไม่มีสิทธิ์บันทึกการรับรถ'); return; }
+  const signupId = document.getElementById('carFulfillMember').value;
+  if(!signupId){ alert('เลือกสมาชิกที่ลงชื่อไว้ก่อน'); return; }
+  const signup = carSignups.find(s=>s.id===signupId);
+  if(!signup){ alert('ไม่พบรายการลงชื่อ'); return; }
 
-function resetCarMemberDecision(){
-  carMemberDecision = {};
-  renderCarMemberDecision();
+  const carCount = parseInt((document.getElementById('actCarCount-car')||{value:0}).value) || 0;
+  const vehicle = document.getElementById('actVehicle-car').value.trim();
+  const location = document.getElementById('actLocation-car').value.trim();
+  const note = document.getElementById('actNote-car').value.trim();
+  if(carCount <= 0){ alert('กรอกจำนวนคันรถที่รับ'); return; }
+  if(!vehicle){ alert('กรอกทะเบียนหรือหมายเลขรถ'); return; }
+
+  const mediaFile = document.getElementById('actVideo-car').files[0];
+  let mediaData = null, mediaType = null;
+  if(mediaFile){
+    mediaType = mediaFile.type;
+    mediaData = await new Promise((res,rej)=>{ const r = new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(mediaFile); });
+  }
+
+  const rec = {
+    id: uid(), memberIds: [signup.memberId], location, items: [], mediaData, mediaType,
+    date: nowStr(), ts: Date.now(), carCount, vehicle, note,
+    acceptedMemberIds: [signup.memberId], rejectedMemberIds: []
+  };
+  if(!performedActivities.car) performedActivities.car = [];
+  performedActivities.car.push(rec);
+
+  signup.status = 'received';
+  signup.vehicle = vehicle;
+  signup.deliveryDate = rec.date;
+
+  pointsList.push({ id: uid(), memberId: signup.memberId, points: 1, date: nowStr(), ts: Date.now(), source: 'car', activityId: rec.id });
+
+  await saveKey(KEYS.points, pointsList);
+  await saveKey(KEYS.carSignups, carSignups);
+  await saveKey(KEYS.activityRecords, performedActivities);
+  await logAction(`บันทึกรับรถ 100 โล: ${memberName(signup.memberId)} ทะเบียน ${vehicle}`);
+
+  renderPoints();
+  document.getElementById('actVehicle-car').value = '';
+  document.getElementById('actLocation-car').value = '';
+  document.getElementById('actNote-car').value = '';
+  document.getElementById('actVideo-car').value = '';
+  document.getElementById('actCarCount-car').value = '1';
+  renderCarSignupTab();
 }
 
 function renderPerformedActivities(type){
@@ -2697,13 +2824,6 @@ async function performActivity(type){
     if(money <= 0){ alert('กรอกจำนวนเงินแดงที่ได้รับ'); return; }
     const moneyId = await findOrCreateItemByName('เงินแดง');
     if(moneyId) items.push({ itemId: moneyId, qty: money });
-  } else if(type === 'car'){
-    const carCount = parseInt((document.getElementById('actCarCount-car')||{value:0}).value) || 0;
-    const vehicle = document.getElementById('actVehicle-car').value.trim();
-    const note = document.getElementById('actNote-car').value.trim();
-    if(carCount <= 0){ alert('กรอกจำนวนคันรถที่รับ'); return; }
-    if(!vehicle){ alert('กรอกทะเบียนหรือหมายเลขรถ'); return; }
-    items = [];
   } else {
     const checked = [...document.querySelectorAll(`input[name="actItem-${type}"]:checked`)];
     items = checked.map(ch => ({ itemId: ch.value, qty: parseInt((document.getElementById(`actItemQty-${type}-${ch.value}`)||{value:1}).value) || 1 }));
@@ -2717,20 +2837,13 @@ async function performActivity(type){
     mediaData = await new Promise((res,rej)=>{ const r = new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(mediaFile); });
   }
   const rec = { id: uid(), memberIds, location, items, mediaData, mediaType, date: nowStr(), ts: Date.now() };
-  if(type === 'car'){
-    rec.carCount = parseInt((document.getElementById('actCarCount-car')||{value:0}).value) || 0;
-    rec.vehicle = document.getElementById('actVehicle-car').value.trim();
-    rec.note = document.getElementById('actNote-car').value.trim();
-    rec.acceptedMemberIds = getCarAcceptedMembers();
-    rec.rejectedMemberIds = getCarRejectedMembers();
-  }
   if(!performedActivities[type]) performedActivities[type]=[];
   performedActivities[type].push(rec);
   // award points per member for activities: sell=1, airdrop=2, box=1
   try{
     let ptsPer = 0;
     if(type === 'airdrop') ptsPer = 2;
-    else if(type === 'sell' || type === 'box' || type === 'car') ptsPer = 1;
+    else if(type === 'sell' || type === 'box') ptsPer = 1;
     if(ptsPer > 0){
       memberIds.forEach(mid=>{
         pointsList.push({ id: uid(), memberId: mid, points: ptsPer, date: nowStr(), ts: Date.now(), source: type, activityId: rec.id });
@@ -2753,12 +2866,6 @@ async function performActivity(type){
   // clear form
   document.getElementById('actLocation-'+type).value='';
   if(type==='sell') document.getElementById('actMoney-sell').value='';
-  if(type==='car'){
-    const carCountEl = document.getElementById('actCarCount-car'); if(carCountEl) carCountEl.value = '1';
-    const vehicleEl = document.getElementById('actVehicle-car'); if(vehicleEl) vehicleEl.value = '';
-    const noteEl = document.getElementById('actNote-car'); if(noteEl) noteEl.value = '';
-    resetCarMemberDecision();
-  }
   if(document.getElementById('actVideo-'+type)) document.getElementById('actVideo-'+type).value='';
   clearMemberPicker(type);
 }
