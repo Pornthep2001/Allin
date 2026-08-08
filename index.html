@@ -1513,6 +1513,9 @@ document.querySelectorAll('nav.tabs button').forEach(btn=>{
 });
 
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function nowStr(){
+  return new Date().toLocaleString('th-TH', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
 function escapeHtml(str){
   const div = document.createElement('div');
   div.textContent = str ?? '';
