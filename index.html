@@ -2675,8 +2675,39 @@ function setCarFilter(filter){
   renderCarSignupTab();
 }
 
+// Removes car signups / history / points that reference a member who no
+// longer exists (e.g. was deleted from the members list). Without this,
+// a deleted member's "received" signup has no card to render and can
+// never be cleared from the stats bar or history through the UI.
+async function pruneOrphanedCarData(){
+  const memberExists = id => members.some(m=>m.id===id);
+  let changed = false;
+
+  const cleanSignups = carSignups.filter(s=>memberExists(s.memberId));
+  if(cleanSignups.length !== carSignups.length){ carSignups = cleanSignups; changed = true; }
+
+  if(performedActivities.car && performedActivities.car.length){
+    const cleanRecs = performedActivities.car.filter(r=>memberExists((r.memberIds||[])[0]));
+    if(cleanRecs.length !== performedActivities.car.length){
+      performedActivities.car = cleanRecs;
+      changed = true;
+    }
+  }
+
+  const cleanPoints = pointsList.filter(p=> p.source!=='car' || memberExists(p.memberId));
+  if(cleanPoints.length !== pointsList.length){ pointsList = cleanPoints; changed = true; }
+
+  if(changed){
+    await saveKey(KEYS.carSignups, carSignups);
+    await saveKey(KEYS.activityRecords, performedActivities);
+    await saveKey(KEYS.points, pointsList);
+  }
+  return changed;
+}
+
 function renderCarSignupTab(){
   initCarMonth();
+  pruneOrphanedCarData().then(changed=>{ if(changed) renderCarSignupTab(); });
   const label = document.getElementById('carMonthLabel');
   if(label) label.textContent = carMonthLabelFromKey(currentCarMonth);
 
