@@ -125,6 +125,14 @@
   .form-grid.form-inline .field textarea{width:auto;flex:1;}
   .form-grid.form-inline.full .field{display:flex;flex-direction:column;}
   @media (max-width:900px){ .form-grid{grid-template-columns:1fr;} .form-grid.columns-2,.form-grid.columns-3,.form-grid.columns-4{grid-template-columns:1fr;} .form-grid.full{grid-template-columns:1fr;} }
+  /* ---- Add-member form: horizontal, avatar-beside-fields layout ---- */
+  .member-form-layout{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;margin-top:14px;}
+  .member-form-photo{flex:0 0 160px;}
+  .member-form-photo .upload-box{width:160px;height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px;}
+  .member-form-photo .upload-preview{width:100%;height:100%;margin:0;}
+  .member-form-fields{flex:1;min-width:280px;display:flex;flex-direction:column;gap:16px;}
+  .weapon-slots-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;}
+  @media (max-width:560px){ .member-form-photo{flex:0 0 auto;width:100%;} .member-form-photo .upload-box{width:100%;height:130px;} }
   .weapon-slot-inputs{display:flex;gap:6px;}
   .weapon-slot-inputs select:first-child{flex:2;}
   .weapon-slot-inputs select:last-child{flex:1;}
@@ -463,6 +471,12 @@
   .role-badge.admin{background:rgba(212,175,55,0.18);color:var(--gold-soft);border-color:var(--gold);}
   .admin-only{display:inline-block;}
   body.role-member .admin-only{display:none !important;}
+  /* .card and other block/flex containers must keep their natural layout —
+     the generic inline-block above is only meant for small inline controls
+     like buttons/badges, not full-width containers. */
+  .card.admin-only{display:block;}
+  .rank-controls.admin-only{display:flex;}
+  .item-actions.admin-only{display:flex;}
 
   /* ---- Activity log ---- */
   .log-item{
@@ -583,92 +597,99 @@
   <section class="panel active" id="panel-members">
     <div class="card admin-only">
       <h2>เพิ่มสมาชิกใหม่ <span class="eyebrow">Roster</span></h2>
-      <div class="form-grid">
-        <div class="field" style="grid-column:span 1;">
+      <div class="member-form-layout">
+        <div class="member-form-photo">
           <label>รูปโปรไฟล์ (ถ้ามี)</label>
           <div class="upload-box" id="memberUploadBox">
             📷 อัปโหลดรูป
             <input type="file" accept="image/*" id="memberImage" onchange="previewMemberImage(event)">
           </div>
         </div>
-        <div class="field">
-          <label>ชื่อในเกม</label>
-          <input type="text" id="memberName" placeholder="เช่น NongBank">
-        </div>
-        <div class="field">
-          <label>ตำแหน่ง</label>
-          <select id="memberRole">
-            <option value="หัวแก๊งค์">หัวแก๊งค์</option>
-            <option value="รองหัวแก๊งค์">รองหัวแก๊งค์</option>
-            <option value="สมาชิก" selected>สมาชิก</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>เบอร์โทร</label>
-          <input type="text" id="memberPhone" placeholder="เช่น 0812345678">
-        </div>
-        <div class="field">
-          <label>IC</label>
-          <input type="text" id="memberIC" placeholder="เช่น เลข IC ในเกม">
-        </div>
-        <div class="field">
-          <label>วันเกิด</label>
-          <input type="date" id="memberBirthday">
-        </div>
-        <div class="field weapon-slot-field">
-          <label>อาวุธช่องที่ 1</label>
-          <div class="weapon-slot-inputs">
-            <select id="memberWeapon1">
-              <option value="">— ไม่มี —</option>
-              <option value="มีด">🔪 มีด</option>
-              <option value="ไม้">🏒 ไม้</option>
-              <option value="ปืน">🔫 ปืน</option>
-              <option value="สนับ">🥊 สนับ</option>
-            </select>
-            <select id="memberLevel1">
-              <option value="1">Lv.1</option>
-              <option value="2">Lv.2</option>
-              <option value="3">Lv.3</option>
-            </select>
+        <div class="member-form-fields">
+          <div class="form-grid columns-3">
+            <div class="field">
+              <label>ชื่อในเกม</label>
+              <input type="text" id="memberName" placeholder="เช่น NongBank">
+            </div>
+            <div class="field">
+              <label>ตำแหน่ง</label>
+              <select id="memberRole">
+                <option value="หัวแก๊งค์">หัวแก๊งค์</option>
+                <option value="รองหัวแก๊งค์">รองหัวแก๊งค์</option>
+                <option value="สมาชิก" selected>สมาชิก</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>เบอร์โทร</label>
+              <input type="text" id="memberPhone" placeholder="เช่น 0812345678">
+            </div>
+            <div class="field">
+              <label>IC</label>
+              <input type="text" id="memberIC" placeholder="เช่น เลข IC ในเกม">
+            </div>
+            <div class="field">
+              <label>วันเกิด</label>
+              <input type="date" id="memberBirthday">
+            </div>
+            <div class="field">
+              <label>หมายเหตุ</label>
+              <input type="text" id="memberNote" placeholder="เช่น สายฟาร์ม, สายบอส">
+            </div>
           </div>
-        </div>
-        <div class="field weapon-slot-field">
-          <label>อาวุธช่องที่ 2</label>
-          <div class="weapon-slot-inputs">
-            <select id="memberWeapon2">
-              <option value="">— ไม่มี —</option>
-              <option value="มีด">🔪 มีด</option>
-              <option value="ไม้">🏒 ไม้</option>
-              <option value="ปืน">🔫 ปืน</option>
-              <option value="สนับ">🥊 สนับ</option>
-            </select>
-            <select id="memberLevel2">
-              <option value="1">Lv.1</option>
-              <option value="2">Lv.2</option>
-              <option value="3">Lv.3</option>
-            </select>
+
+          <div class="weapon-slots-row">
+            <div class="field weapon-slot-field">
+              <label>อาวุธช่องที่ 1</label>
+              <div class="weapon-slot-inputs">
+                <select id="memberWeapon1">
+                  <option value="">— ไม่มี —</option>
+                  <option value="มีด">🔪 มีด</option>
+                  <option value="ไม้">🏒 ไม้</option>
+                  <option value="ปืน">🔫 ปืน</option>
+                  <option value="สนับ">🥊 สนับ</option>
+                </select>
+                <select id="memberLevel1">
+                  <option value="1">Lv.1</option>
+                  <option value="2">Lv.2</option>
+                  <option value="3">Lv.3</option>
+                </select>
+              </div>
+            </div>
+            <div class="field weapon-slot-field">
+              <label>อาวุธช่องที่ 2</label>
+              <div class="weapon-slot-inputs">
+                <select id="memberWeapon2">
+                  <option value="">— ไม่มี —</option>
+                  <option value="มีด">🔪 มีด</option>
+                  <option value="ไม้">🏒 ไม้</option>
+                  <option value="ปืน">🔫 ปืน</option>
+                  <option value="สนับ">🥊 สนับ</option>
+                </select>
+                <select id="memberLevel2">
+                  <option value="1">Lv.1</option>
+                  <option value="2">Lv.2</option>
+                  <option value="3">Lv.3</option>
+                </select>
+              </div>
+            </div>
+            <div class="field weapon-slot-field">
+              <label>อาวุธช่องที่ 3</label>
+              <div class="weapon-slot-inputs">
+                <select id="memberWeapon3">
+                  <option value="">— ไม่มี —</option>
+                  <option value="มีด">🔪 มีด</option>
+                  <option value="ไม้">🏒 ไม้</option>
+                  <option value="ปืน">🔫 ปืน</option>
+                  <option value="สนับ">🥊 สนับ</option>
+                </select>
+                <select id="memberLevel3">
+                  <option value="1">Lv.1</option>
+                  <option value="2">Lv.2</option>
+                  <option value="3">Lv.3</option>
+                </select>
+              </div>
+            </div>
           </div>
-        </div>
-        <div class="field weapon-slot-field">
-          <label>อาวุธช่องที่ 3</label>
-          <div class="weapon-slot-inputs">
-            <select id="memberWeapon3">
-              <option value="">— ไม่มี —</option>
-              <option value="มีด">🔪 มีด</option>
-              <option value="ไม้">🏒 ไม้</option>
-              <option value="ปืน">🔫 ปืน</option>
-              <option value="สนับ">🥊 สนับ</option>
-            </select>
-            <select id="memberLevel3">
-              <option value="1">Lv.1</option>
-              <option value="2">Lv.2</option>
-              <option value="3">Lv.3</option>
-            </select>
-          </div>
-        </div>
-        <div class="field" style="grid-column:1/-1;">
-          <label>หมายเหตุ</label>
-          <input type="text" id="memberNote" placeholder="เช่น สายฟาร์ม, สายบอส">
         </div>
       </div>
       <div class="actions">
