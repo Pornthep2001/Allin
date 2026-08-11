@@ -1035,7 +1035,7 @@
       <div class="points-grid" id="pointsSummary"></div>
     </div>
 
-    <div class="card">
+    <div class="card admin-only">
       <h2>เพิ่มแต้ม <span class="eyebrow">Grant Points</span></h2>
       <div class="form-grid">
         <div class="field">
@@ -2376,14 +2376,14 @@ function renderRules(){
   if(rulesList.length===0){ list.innerHTML = '<div class="empty"><span class="icon">📜</span>ยังไม่มีกฏระเบียบ</div>'; return; }
   const sorted = [...rulesList].sort((a,b)=> (parseFloat(a.title)||0) - (parseFloat(b.title)||0));
   list.innerHTML = sorted.map(r=>`
-    <div class="row-item">
+    <div class="row-item" ${isAdmin()?`onclick="editRule('${r.id}')"`:''}>
       <div>
         <div style="font-weight:700; color:var(--gold-soft);">ข้อ ${escapeHtml(String(r.title))}</div>
         <div class="meta">${escapeHtml(r.content)}</div>
         <div class="meta">${r.date}</div>
       </div>
       <div style="display:flex;gap:8px;">
-        ${isAdmin()?`<button class="ghost" onclick="deleteRule('${r.id}')">ลบ</button>`:''}
+        ${isAdmin()?`<button class="ghost" onclick="event.stopPropagation(); deleteRule('${r.id}')">ลบ</button>`:''}
       </div>
     </div>
   `).join('');
@@ -2401,6 +2401,26 @@ async function addRule(){
   renderRules();
   await saveKey(KEYS.rules, rulesList);
   await logAction(`เพิ่มกฏระเบียบ: ข้อ ${title}`);
+}
+
+async function editRule(id){
+  if(!isAdmin()) return;
+  const r = rulesList.find(x=>x.id===id);
+  if(!r) return;
+  const newTitle = prompt('แก้ไขหัวข้อกฏ (ตัวเลข):', String(r.title));
+  if(newTitle === null) return;
+  const trimmedTitle = newTitle.trim();
+  if(!trimmedTitle || isNaN(parseFloat(trimmedTitle))){ alert('หัวข้อกฏต้องเป็นตัวเลข'); return; }
+  const newContent = prompt('แก้ไขรายละเอียดกฏ:', r.content);
+  if(newContent === null) return;
+  const trimmedContent = newContent.trim();
+  if(!trimmedContent){ alert('กรอกรายละเอียดกฏ'); return; }
+  r.title = trimmedTitle;
+  r.content = trimmedContent;
+  r.ts = Date.now();
+  renderRules();
+  await saveKey(KEYS.rules, rulesList);
+  await logAction(`แก้ไขกฏระเบียบ: ข้อ ${trimmedTitle}`);
 }
 
 async function deleteRule(id){
@@ -3352,6 +3372,7 @@ function createNavSubmenus(){
 }
 
 async function addPoints(){
+  if(!isAdmin()){ alert('บัญชีนี้ไม่มีสิทธิ์เพิ่มแต้ม'); return; }
   const memberId = document.getElementById('pointsMember').value;
   const pts = parseInt(document.getElementById('pointsValue').value) || 0;
   if(!memberId || pts===0){ alert('เลือกสมาชิกและระบุจำนวนแต้ม'); return; }
