@@ -6,6 +6,7 @@
 <title>ALL IN — ระบบแก๊งค์</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:wght@600;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
   /* Nav submenu popup */
   .nav-submenu{position:absolute;background:linear-gradient(180deg,var(--card-2),var(--card));border:1px solid var(--line);padding:8px;border-radius:8px;display:flex;gap:6px;z-index:1200;box-shadow:0 10px 30px rgba(0,0,0,0.5)}
@@ -512,6 +513,11 @@
     color:#f0a5ac;font-size:12.5px;padding:10px 16px;border-radius:10px;margin-bottom:18px;
     text-align:center;
   }
+  #configWarningBanner{
+    display:none;background:rgba(212,175,55,0.14);border:1px solid var(--gold);
+    color:var(--gold-soft);font-size:12.5px;padding:10px 16px;border-radius:10px;margin-bottom:18px;
+    text-align:center;
+  }
 
   /* ---- Announcement popup ---- */
   #annPopup{
@@ -589,7 +595,8 @@
     <button class="ghost" id="logoutBtn" onclick="logout()">ออกจากระบบ</button>
   </header>
 
-  <div id="saveErrorBanner">⚠️ บันทึกข้อมูลไม่สำเร็จ — ระบบเก็บข้อมูลอาจใช้งานไม่ได้ในขณะนี้ (มักเกิดถ้าเปิดไฟล์นี้นอกหน้าต่างแชท Claude โดยตรง) ข้อมูลอาจไม่ถูกบันทึกถาวร</div>
+  <div id="saveErrorBanner">⚠️ บันทึกข้อมูลไม่สำเร็จ — เชื่อมต่อฐานข้อมูลไม่ได้ในขณะนี้ ข้อมูลจะถูกเก็บไว้ในเครื่องนี้ชั่วคราวเท่านั้น</div>
+  <div id="configWarningBanner">ℹ️ ยังไม่ได้ตั้งค่าฐานข้อมูล Supabase — ข้อมูลตอนนี้จะถูกเก็บเฉพาะในเครื่องนี้ (localStorage) และจะไม่ sync กับเครื่องอื่น ดูวิธีตั้งค่าได้ที่ไฟล์ supabase-setup.sql ที่แนบมาให้</div>
 
   <nav class="tabs">
     <button data-tab="members" class="active">🧑‍🤝‍🧑 สมาชิก</button>
@@ -1329,6 +1336,28 @@
 </div>
 
 <script>
+// ---------- Supabase config ----------
+// วางค่าที่ได้จาก Supabase Project ของคุณตรงนี้:
+// 1) ไปที่ https://supabase.com -> สร้างโปรเจกต์ใหม่ (ฟรี)
+// 2) ไปที่ Project Settings -> API แล้วคัดลอก "Project URL" และ "anon public" key มาใส่ด้านล่าง
+// 3) ไปที่ SQL Editor แล้วรันคำสั่งสร้างตาราง (ดูไฟล์ supabase-setup.sql ที่แนบมาให้)
+const SUPABASE_URL = 'https://iuqaqhzmzwjnjdgsfgrd.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_m6uZGPlE3uea4h_5bbnFMg_P1Y-zSpp';
+
+let supabaseClient = null;
+let supabaseReady = false;
+try{
+  if(window.supabase && SUPABASE_URL.indexOf('YOUR-PROJECT-REF') === -1 && SUPABASE_ANON_KEY.indexOf('YOUR-ANON-PUBLIC-KEY') === -1){
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    supabaseReady = true;
+  }
+}catch(e){ console.warn('Supabase init failed, falling back to localStorage only', e); }
+
+function showConfigWarning(){
+  const b = document.getElementById('configWarningBanner');
+  if(b) b.style.display = 'block';
+}
+
 const KEYS = {
   members: 'allin-members',
   fund: 'allin-fund-entries',
@@ -1665,16 +1694,32 @@ async function previewItemImage(e){
 }
 
 // ---------- Load / Save ----------
+// ข้อมูลทุกคีย์เก็บเป็นแถวเดียวในตาราง `allin_data` (คอลัมน์ key, value, updated_at)
+// บน Supabase ทำให้ทุกเครื่อง/ทุกคนที่เข้าเว็บนี้เห็นข้อมูลชุดเดียวกัน
+// ถ้ายังไม่ตั้งค่า SUPABASE_URL/SUPABASE_ANON_KEY ระบบจะ fallback ไปใช้ localStorage
+// ของเครื่องนั้น ๆ ไปก่อน (ข้อมูลจะไม่ sync ข้ามเครื่อง)
 async function loadKey(key, fallback){
   try{
-    if(window.storage && typeof window.storage.get === 'function'){
+    if(supabaseReady){
       try{
-        const r = await window.storage.get(key, true);
-        if(r){
-          if(typeof r.value === 'string') return JSON.parse(r.value);
-          if(typeof r === 'string') return JSON.parse(r);
+        const { data, error } = await supabaseClient
+          .from('allin_data')
+          .select('value')
+          .eq('key', key)
+          .maybeSingle();
+        if(error) throw error;
+        if(data && data.value !== null && data.value !== undefined){
+          hideSaveError();
+          return data.value; // jsonb column -> already parsed
         }
-      }catch(e){ /* ignore and fallback to localStorage */ }
+        hideSaveError();
+        return fallback;
+      }catch(e){
+        console.warn('Supabase loadKey failed, falling back to localStorage', e);
+        showConfigWarning();
+      }
+    } else {
+      showConfigWarning();
     }
     const stored = window.localStorage.getItem(key);
     return stored ? JSON.parse(stored) : fallback;
@@ -1682,20 +1727,25 @@ async function loadKey(key, fallback){
 }
 async function saveKey(key, value){
   try{
-    const payload = JSON.stringify(value);
-    if(window.storage && typeof window.storage.set === 'function'){
+    if(supabaseReady){
       try{
-        const result = await window.storage.set(key, payload, true);
-        if(result){
-          hideSaveError();
-          return true;
-        }
+        const { error } = await supabaseClient
+          .from('allin_data')
+          .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+        if(error) throw error;
+        hideSaveError();
+        // เก็บสำรองไว้ใน localStorage ด้วย เผื่อออฟไลน์
+        try{ window.localStorage.setItem(key, JSON.stringify(value)); }catch(e){}
+        return true;
       }catch(e){
-        /* ignore and fallback to localStorage */
+        console.error('Supabase saveKey failed', e);
+        showSaveError();
+        // ยังพยายามเก็บลง localStorage ของเครื่องนี้ไว้ก่อน ไม่ให้ข้อมูลหาย
       }
     }
+    const payload = JSON.stringify(value);
     window.localStorage.setItem(key, payload);
-    hideSaveError();
+    if(!supabaseReady) hideSaveError();
     return true;
   }catch(e){
     console.error(e);
@@ -1905,6 +1955,67 @@ async function loadAll(){
   ['steal','sellDrug'].forEach(t=>renderWork(t));
   renderPoints();
   // render performed activity/work records
+  ['sell','airdrop','box'].forEach(t=>renderPerformedActivities(t));
+  ['steal','sellDrug'].forEach(t=>renderPerformedWork(t));
+  renderCarSignupTab();
+  renderStory();
+  renderAccounts();
+  renderLog();
+  setupRealtimeSync();
+}
+
+// ---------- Realtime sync across devices ----------
+// เมื่อคนอื่นบันทึกข้อมูล (ผ่าน saveKey) แถวในตาราง allin_data จะเปลี่ยน
+// เราติดตามการเปลี่ยนแปลงนั้นแล้วโหลดข้อมูลใหม่ทั้งหมดมาแสดงให้ทันสมัยอยู่เสมอ
+let realtimeChannel = null;
+let realtimeReloadTimer = null;
+function setupRealtimeSync(){
+  if(!supabaseReady || realtimeChannel) return;
+  try{
+    realtimeChannel = supabaseClient
+      .channel('allin_data_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'allin_data' }, ()=>{
+        // debounce เพื่อไม่ให้ reload ถี่เกินไปเวลามีการบันทึกหลายคีย์ติดกัน
+        clearTimeout(realtimeReloadTimer);
+        realtimeReloadTimer = setTimeout(async ()=>{
+          const activeEl = document.activeElement;
+          const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT');
+          if(isTyping) return; // อย่าเพิ่งดึงข้อมูลใหม่ทับฟอร์มที่กำลังกรอกอยู่
+          await loadAllSilently();
+        }, 800);
+      })
+      .subscribe();
+  }catch(e){ console.warn('setupRealtimeSync failed', e); }
+}
+
+// เหมือน loadAll แต่ไม่เรียก setupRealtimeSync ซ้ำ (ป้องกัน subscribe ซ้อนกัน)
+async function loadAllSilently(){
+  members = await loadKey(KEYS.members, []);
+  fundEntries = await loadKey(KEYS.fund, []);
+  announcements = await loadKey(KEYS.announce, []);
+  inventory = await loadKey(KEYS.items, []);
+  borrowRecords = await loadKey(KEYS.borrow, []);
+  deliveryRecords = await loadKey(KEYS.delivery, []);
+  userAccounts = await loadKey(KEYS.accounts, []);
+  rulesList = await loadKey(KEYS.rules, []);
+  activities = await loadKey(KEYS.activities, { sell: [], airdrop: [], box: [], car: [] });
+  workRecords = await loadKey(KEYS.work, { steal: [], sellDrug: [] });
+  pointsList = await loadKey(KEYS.points, []);
+  performedActivities = await loadKey(KEYS.activityRecords, { sell: [], airdrop: [], box: [], car: [] });
+  performedWork = await loadKey(KEYS.workRecordsPerformed, { steal: [], sellDrug: [] });
+  activityLog = await loadKey(KEYS.log, []);
+  carSignups = await loadKey(KEYS.carSignups, []);
+  renderMembers();
+  renderFund();
+  renderAnnounce();
+  renderItems();
+  renderBorrow();
+  renderDeliverySelects();
+  renderDelivery();
+  renderRules();
+  ['sell','airdrop','box'].forEach(t=>renderActivities(t));
+  ['steal','sellDrug'].forEach(t=>renderWork(t));
+  renderPoints();
   ['sell','airdrop','box'].forEach(t=>renderPerformedActivities(t));
   ['steal','sellDrug'].forEach(t=>renderPerformedWork(t));
   renderCarSignupTab();
