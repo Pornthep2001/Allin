@@ -2537,8 +2537,16 @@ function startEditMember(id){
   document.getElementById('memberWeapon3').value = m.weapon3 || '';
   document.getElementById('memberLevel3').value = m.level3 || '1';
   document.getElementById('memberNote').value = m.note || '';
-  if(m.image) pendingMemberImage = m.image;
-  if(pendingMemberImage) document.getElementById('memberUploadBox').innerHTML = `<img class="upload-preview" src="${pendingMemberImage}"><input type="file" accept="image/*" id="memberImage" onchange="previewMemberImage(event)">✓ เปลี่ยนรูป`;
+  // Always reset to THIS member's photo (or none) — previously this only
+  // overwrote pendingMemberImage when the member had a photo, so switching
+  // from a member with a photo to one without kept showing the old photo
+  // and could even save it onto the wrong member.
+  pendingMemberImage = m.image || null;
+  if(pendingMemberImage){
+    document.getElementById('memberUploadBox').innerHTML = `<img class="upload-preview" src="${pendingMemberImage}"><input type="file" accept="image/*" id="memberImage" onchange="previewMemberImage(event)">✓ เปลี่ยนรูป`;
+  } else {
+    document.getElementById('memberUploadBox').innerHTML = `📷 อัปโหลดรูป<input type="file" accept="image/*" id="memberImage" onchange="previewMemberImage(event)">`;
+  }
   document.getElementById('memberSaveButton').textContent = 'อัปเดตสมาชิก';
   document.getElementById('memberCancelButton').style.display = 'inline-block';
 }
