@@ -177,6 +177,7 @@
   .car-stat .car-stat-label{font-size:11px;color:var(--ink-dim);letter-spacing:0.5px;margin-top:4px;text-transform:uppercase;}
   .car-stat.received .car-stat-num{color:#7fd6a4;}
   .car-stat.pending .car-stat-num{color:#e8b26a;}
+  .car-stat.danger .car-stat-num{color:#e8828d;}
   @media (max-width:560px){ .car-stats-bar{grid-template-columns:1fr 1fr 1fr;} .car-stat{padding:10px 6px;} .car-stat .car-stat-num{font-size:24px;} }
 
   .car-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:16px;}
@@ -546,6 +547,84 @@
   }
   .popup-box .popup-close:hover{border-color:var(--gold);color:var(--gold-soft);}
   .popup-box .popup-foot{margin-top:18px;text-align:right;}
+
+  /* ---- Dig points: ปูน / น้ำมัน / ลิค ---- */
+  .dig-type-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .dig-type-opt{
+    display:flex;flex-direction:column;align-items:center;gap:6px;
+    background:rgba(0,0,0,0.22);border:1px solid var(--line);border-radius:12px;
+    padding:12px 8px;cursor:pointer;transition:all .15s ease;text-align:center;
+  }
+  .dig-type-opt .ic{font-size:22px;line-height:1;}
+  .dig-type-opt .lb{font-size:12.5px;font-weight:700;color:var(--ink-dim);}
+  .dig-type-opt:hover{border-color:rgba(212,175,55,0.4);}
+  .dig-type-opt.active{border-color:var(--type-color,var(--gold));background:var(--type-bg,rgba(212,175,55,0.12));box-shadow:0 0 0 1px var(--type-color,var(--gold)) inset;}
+  .dig-type-opt.active .lb{color:var(--ink);}
+
+  .dig-stats-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px;}
+  .dig-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:16px;}
+  .dig-filter-chip{border:1px solid var(--line);background:rgba(0,0,0,0.18);color:var(--ink-dim);border-radius:999px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s ease;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;}
+  .dig-filter-chip:hover{color:var(--ink);border-color:var(--gold);}
+  .dig-filter-chip.active{background:linear-gradient(135deg,var(--gold-soft),var(--gold));color:#1a1206;border-color:transparent;}
+
+  .dig-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-top:16px;}
+  .dig-card{
+    position:relative;overflow:hidden;
+    background:linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015));
+    border:1px solid var(--line);border-left:4px solid var(--type-color,var(--gold));
+    border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;
+    transition:transform .15s ease,border-color .15s ease;
+  }
+  .dig-card:hover{transform:translateY(-2px);}
+  .dig-card.state-cooling{border-color:rgba(181,50,61,0.5);}
+  .dig-card.state-ready{border-color:rgba(127,214,164,0.5);}
+  .dig-card.state-overdue{border-color:rgba(232,178,106,0.55);}
+  .dig-card .dig-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+  .dig-card .dig-type-badge{
+    display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;
+    letter-spacing:0.4px;padding:4px 9px;border-radius:999px;
+    background:var(--type-bg,rgba(212,175,55,0.12));color:var(--type-color,var(--gold-soft));
+    white-space:nowrap;
+  }
+  .dig-card .dig-location{
+    font-family:'Playfair Display',serif;font-weight:700;font-size:16px;color:var(--ink);line-height:1.3;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default;
+  }
+  .dig-card .dig-state-pill{
+    font-size:10.5px;font-weight:700;letter-spacing:0.4px;padding:3px 9px;border-radius:999px;
+    white-space:nowrap;flex-shrink:0;
+  }
+  .dig-card.state-cooling .dig-state-pill{background:rgba(181,50,61,0.22);color:#f0a5ac;}
+  .dig-card.state-ready .dig-state-pill{background:rgba(127,214,164,0.18);color:#7fd6a4;}
+  .dig-card.state-overdue .dig-state-pill{background:rgba(232,178,106,0.22);color:#f2c98a;}
+
+  /* กระพริบ 2 ครั้งเมื่อครบเวลาแจ้งเตือน (15/25/35/45 นาที) */
+  .dig-card.dig-flash{animation:digCardFlash 0.35s ease-in-out 2;}
+  @keyframes digCardFlash{
+    0%,100%{ box-shadow:0 0 0 0 transparent; filter:brightness(1); }
+    50%{ box-shadow:0 0 26px 6px var(--type-color,var(--gold)); filter:brightness(1.7); }
+  }
+
+  .dig-timer{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:1px;line-height:1;color:var(--ink);}
+  .dig-card.state-cooling .dig-timer{color:#f0a5ac;}
+  .dig-card.state-ready .dig-timer{color:#7fd6a4;}
+  .dig-card.state-overdue .dig-timer{color:#f2c98a;}
+  .dig-timer-sub{font-size:11.5px;color:var(--ink-dim);margin-top:2px;}
+
+  .dig-progress-track{width:100%;height:6px;border-radius:999px;background:rgba(0,0,0,0.3);overflow:hidden;}
+  .dig-progress-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#b5323d,#e8828d);transition:width 1s linear;}
+  .dig-card.state-ready .dig-progress-fill{background:linear-gradient(90deg,#5ea86b,#7fd6a4);}
+  .dig-card.state-overdue .dig-progress-fill{background:linear-gradient(90deg,#c98f3f,#e8b26a);}
+
+  .dig-meta{font-size:11px;color:var(--ink-dim);display:flex;flex-direction:column;gap:2px;}
+  .dig-actions{display:flex;gap:8px;margin-top:2px;}
+  .dig-actions button{flex:1;border:none;border-radius:8px;padding:9px 8px;font-size:12.5px;font-weight:700;cursor:pointer;transition:all .15s ease;font-family:'Inter';}
+  .dig-actions .dig-btn-spawn{background:linear-gradient(135deg,#7fd6a4,#5ea86b);color:#0c1f14;}
+  .dig-actions .dig-btn-spawn:hover{transform:translateY(-1px);}
+  .dig-actions .dig-btn-del{background:rgba(181,50,61,0.16);color:#f0a5ac;border:1px solid rgba(181,50,61,0.35)!important;}
+  .dig-actions .dig-btn-del:hover{background:rgba(181,50,61,0.28);}
+  .dig-empty{color:var(--ink-dim);font-size:13.5px;text-align:center;padding:30px 10px;}
+  @media (max-width:560px){ .dig-stats-bar{grid-template-columns:1fr 1fr 1fr;} .dig-grid{grid-template-columns:1fr;} }
 </style>
 </head>
 <body>
@@ -605,6 +684,7 @@
     <button data-tab="rules">📜 กฏระเบียบ</button>
     <button data-tab="activities">🎯 กิจกรรม</button>
     <button data-tab="car">🚗 รถ 100 โล</button>
+    <button data-tab="dig">⛏️ จุดจก ปูน/น้ำมัน/ลิค</button>
     <button data-tab="items">🎒 เมนูของ</button>
     <button data-tab="borrow">📦 เบิก / ยืมของ</button>
     <button data-tab="delivery">🚚 ส่งของแก๊งค์</button>
@@ -883,6 +963,79 @@
         <h2>ประวัติการรับรถ 100 โล</h2>
         <div class="hint">รายการด้านล่างจะแสดงผู้ที่ได้รับรถจริง พร้อมทะเบียนและ VDO หากแนบไว้ เรียงตามเดือน</div>
         <div class="list" id="activityPerformedList-car"></div>
+      </div>
+    </section>
+
+    <!-- ===== DIG POINTS: ปูน / น้ำมัน / ลิค ===== -->
+    <section class="panel" id="panel-dig">
+      <div class="card">
+        <h2>⛏️ แจ้งจุดจก <span class="eyebrow">ปูน · น้ำมัน · ลิค</span></h2>
+        <p style="margin:0 0 14px;color:var(--ink-dim);font-size:13.5px;">
+          กรอกตำแหน่งที่จก เลือกประเภท ระบบจะนับเวลาเดินหน้าตั้งแต่ 00:00 ให้อัตโนมัติ —
+          🔴 <b>ยังไม่ครบ 15 นาที</b> = สีแดง, 🟢 <b>ครบ 15 นาทีแล้ว (เข้ารอบ)</b> = สีเขียว, 🟡 <b>เกิน 45 นาที</b> = สีเหลือง
+          การ์ดจะกระพริบแจ้งเตือน 2 ครั้งทุกครั้งที่ครบ 15, 20, 25, 30, 35 และ 45 นาที เมื่อของขึ้นแล้วให้กด "ออกแล้ว" เพื่อรีเซ็ตจับเวลาใหม่
+        </p>
+
+        <div class="form-grid">
+          <div class="field" style="grid-column:1/-1;">
+            <label>ประเภท</label>
+            <div class="dig-type-picker" id="digTypePicker">
+              <div class="dig-type-opt active" data-type="ปูน" style="--type-color:#c9b79c;--type-bg:rgba(201,183,156,0.14);" onclick="selectDigType('ปูน')">
+                <div class="ic">🧱</div><div class="lb">ปูน</div>
+              </div>
+              <div class="dig-type-opt" data-type="น้ำมัน" style="--type-color:#e8b26a;--type-bg:rgba(232,178,106,0.14);" onclick="selectDigType('น้ำมัน')">
+                <div class="ic">🛢️</div><div class="lb">น้ำมัน</div>
+              </div>
+              <div class="dig-type-opt" data-type="ลิค" style="--type-color:#9c8cf0;--type-bg:rgba(156,140,240,0.14);" onclick="selectDigType('ลิค')">
+                <div class="ic">🧪</div><div class="lb">ลิค</div>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label>ตำแหน่ง / จุดที่จก</label>
+            <input type="text" id="digLocation" placeholder="เช่น ทุ่งนาเหนือ, ริมเขาแดง...">
+          </div>
+          <div class="field">
+            <label>เวลาที่จกไป</label>
+            <input type="datetime-local" id="digStartTime" lang="en-GB" step="60">
+            <div class="hint">รูปแบบเวลา 24 ชม. เช่น 19:50, 08:00 (ไม่มี AM/PM)</div>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="primary" onclick="addDigPoint()">+ เพิ่มจุดจก</button>
+          <span class="hint">เวลาเริ่มต้นจะเติมเป็นเวลาปัจจุบันให้อัตโนมัติ แก้ไขได้หากจกไปแล้วก่อนหน้านี้</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>รายการจุดที่กำลังจับเวลา <span class="count-badge" id="digCountBadge">0</span></h2>
+
+        <div class="dig-stats-bar">
+          <div class="car-stat danger">
+            <div class="car-stat-num" id="digStatCooling">0</div>
+            <div class="car-stat-label">ยังไม่ครบ 15 นาที</div>
+          </div>
+          <div class="car-stat received">
+            <div class="car-stat-num" id="digStatReady">0</div>
+            <div class="car-stat-label">เข้ารอบ 15 นาทีแล้ว</div>
+          </div>
+          <div class="car-stat pending">
+            <div class="car-stat-num" id="digStatOverdue">0</div>
+            <div class="car-stat-label">เกิน 45 นาที</div>
+          </div>
+        </div>
+
+        <div class="dig-toolbar">
+          <input type="text" class="car-search" id="digSearchInput" placeholder="🔍 ค้นหาตำแหน่ง..." oninput="renderDigPoints()">
+          <div class="car-filter-chips">
+            <button type="button" class="dig-filter-chip active" data-filter="all" onclick="setDigFilter('all')">ทั้งหมด</button>
+            <button type="button" class="dig-filter-chip" data-filter="ปูน" onclick="setDigFilter('ปูน')">🧱 ปูน</button>
+            <button type="button" class="dig-filter-chip" data-filter="น้ำมัน" onclick="setDigFilter('น้ำมัน')">🛢️ น้ำมัน</button>
+            <button type="button" class="dig-filter-chip" data-filter="ลิค" onclick="setDigFilter('ลิค')">🧪 ลิค</button>
+          </div>
+        </div>
+
+        <div class="dig-grid" id="digGrid"></div>
       </div>
     </section>
 
@@ -1392,7 +1545,8 @@ const KEYS = {
   workRecordsPerformed: 'allin-work-performed',
   log: 'allin-activity-log',
   carSignups: 'allin-car-signups',
-  sellDrugTimer: 'allin-selldrug-timer'
+  sellDrugTimer: 'allin-selldrug-timer',
+  digPoints: 'allin-dig-points'
 };
 let members = [];
 let fundEntries = [];
@@ -1418,6 +1572,14 @@ let currentWorkView = 'steal';
 let selectedMembersByActivity = { sell: [], airdrop: [], box: [] };
 let carSignups = []; // { id, memberId, month:'YYYY-MM', date, ts, status:'pending'|'received', vehicle, deliveryDate }
 let currentCarMonth = null; // 'YYYY-MM'
+let digPoints = []; // { id, type:'ปูน'|'น้ำมัน'|'ลิค', location, startTs, createdAt, lastAction }
+let currentDigType = 'ปูน';
+let currentDigFilter = 'all';
+let digTimerInterval = null;
+const DIG_COOLDOWN_SEC = 15 * 60; // ครบ 15 นาที = เข้าสู่ช่วงพร้อม (สีเขียว)
+const DIG_MAX_SEC = 45 * 60;      // เกิน 45 นาที = สีเหลือง
+const DIG_FLASH_MARKS = [15*60, 20*60, 25*60, 30*60, 35*60, 45*60]; // นาทีที่ต้องกระพริบแจ้งเตือน
+let digFlashState = {}; // id -> Set ของ mark(sec) ที่กระพริบแจ้งไปแล้วในรอบปัจจุบัน
 
 // ---------- Login gate ----------
 // Session state is persisted in localStorage so a logged-in user can
@@ -1655,6 +1817,10 @@ document.querySelectorAll('nav.tabs button').forEach(btn=>{
     }
     if(btn.dataset.tab === 'work'){
       renderSellDrugSchedule();
+    }
+    if(btn.dataset.tab === 'dig'){
+      setDigStartTimeToNow();
+      renderDigPoints();
     }
   });
 });
@@ -1964,6 +2130,7 @@ async function loadAll(){
   activityLog = await loadKey(KEYS.log, []);
   carSignups = await loadKey(KEYS.carSignups, []);
   sellDrugTimerState = await loadKey(KEYS.sellDrugTimer, { spawnTime: '', hasSeconds: false, sold: [] });
+  digPoints = await loadKey(KEYS.digPoints, []);
   if(ensureMemberOrder()){ await saveKey(KEYS.members, members); }
   renderMembers();
   renderFund();
@@ -1985,6 +2152,8 @@ async function loadAll(){
   renderAccounts();
   renderLog();
   renderSellDrugSchedule();
+  renderDigPoints();
+  startDigTimerLoop();
   setupRealtimeSync();
 }
 
@@ -2030,6 +2199,7 @@ async function loadAllSilently(){
   activityLog = await loadKey(KEYS.log, []);
   carSignups = await loadKey(KEYS.carSignups, []);
   sellDrugTimerState = await loadKey(KEYS.sellDrugTimer, { spawnTime: '', hasSeconds: false, sold: [] });
+  digPoints = await loadKey(KEYS.digPoints, []);
   renderMembers();
   renderFund();
   renderAnnounce();
@@ -2048,6 +2218,7 @@ async function loadAllSilently(){
   renderAccounts();
   renderLog();
   renderSellDrugSchedule();
+  renderDigPoints();
 }
 
 // ---------- ACCOUNTS (ADMIN ONLY) ----------
@@ -3300,6 +3471,257 @@ function renderPerformedActivityRow(type, r){
 
 function renderCarHistory(){
   renderPerformedActivities('car');
+}
+
+// ================= DIG POINTS: ปูน / น้ำมัน / ลิค =================
+const DIG_TYPE_META = {
+  'ปูน':    { icon:'🧱', color:'#c9b79c', bg:'rgba(201,183,156,0.14)' },
+  'น้ำมัน': { icon:'🛢️', color:'#e8b26a', bg:'rgba(232,178,106,0.14)' },
+  'ลิค':    { icon:'🧪', color:'#9c8cf0', bg:'rgba(156,140,240,0.14)' }
+};
+
+function pad2(n){ return String(n).padStart(2,'0'); }
+
+// แปลง timestamp (ms) -> ค่าใส่ input type=datetime-local (เวลาท้องถิ่น)
+function tsToDatetimeLocal(ts){
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+function datetimeLocalToTs(val){
+  if(!val) return Date.now();
+  const t = new Date(val).getTime();
+  return isNaN(t) ? Date.now() : t;
+}
+
+function setDigStartTimeToNow(){
+  const el = document.getElementById('digStartTime');
+  if(el && !el.value) el.value = tsToDatetimeLocal(Date.now());
+}
+
+function selectDigType(type){
+  currentDigType = type;
+  document.querySelectorAll('#digTypePicker .dig-type-opt').forEach(el=>{
+    el.classList.toggle('active', el.dataset.type === type);
+  });
+}
+
+function setDigFilter(filter){
+  currentDigFilter = filter;
+  document.querySelectorAll('.dig-filter-chip').forEach(el=>{
+    el.classList.toggle('active', el.dataset.filter === filter);
+  });
+  renderDigPoints();
+}
+
+async function addDigPoint(){
+  const locationEl = document.getElementById('digLocation');
+  const timeEl = document.getElementById('digStartTime');
+  const location = (locationEl.value || '').trim();
+  if(!location){
+    alert('กรุณากรอกตำแหน่งที่จก');
+    locationEl.focus();
+    return;
+  }
+  const startTs = timeEl.value ? datetimeLocalToTs(timeEl.value) : Date.now();
+  const entry = {
+    id: uid(),
+    type: currentDigType,
+    location,
+    startTs,
+    createdAt: nowStr(),
+    lastAction: 'added'
+  };
+  digPoints.unshift(entry);
+  digFlashState[entry.id] = new Set();
+  await saveKey(KEYS.digPoints, digPoints);
+  await logAction(`แจ้งจุดจก ${currentDigType} — ${location}`);
+  locationEl.value = '';
+  timeEl.value = tsToDatetimeLocal(Date.now());
+  renderDigPoints();
+}
+
+async function markDigSpawned(id){
+  const entry = digPoints.find(d=>d.id===id);
+  if(!entry) return;
+  entry.startTs = Date.now();
+  entry.lastAction = 'spawned';
+  digFlashState[entry.id] = new Set(); // เริ่มรอบใหม่ ล้างประวัติการกระพริบ
+  await saveKey(KEYS.digPoints, digPoints);
+  await logAction(`แจ้งว่า ${entry.type} ที่ "${entry.location}" ขึ้นแล้ว — เริ่มจับเวลาคูลดาวน์ใหม่`);
+  renderDigPoints();
+}
+
+async function deleteDigPoint(id){
+  const entry = digPoints.find(d=>d.id===id);
+  if(!entry) return;
+  if(!confirm(`ยืนยันการลบจุดจก "${entry.location}" (${entry.type}) ?`)) return;
+  digPoints = digPoints.filter(d=>d.id!==id);
+  delete digFlashState[id];
+  await saveKey(KEYS.digPoints, digPoints);
+  await logAction(`ลบจุดจก ${entry.type} — ${entry.location}`);
+  renderDigPoints();
+}
+
+function computeDigState(startTs){
+  const elapsedSec = Math.max(0, Math.floor((Date.now() - startTs) / 1000));
+  const clock = formatClock(elapsedSec); // นับเวลาเดินไปข้างหน้าเรื่อยๆ ตั้งแต่ 00:00
+  if(elapsedSec < DIG_COOLDOWN_SEC){
+    const remain = DIG_COOLDOWN_SEC - elapsedSec;
+    return {
+      state: 'cooling',
+      pillText: 'ยังไม่ครบ 15 นาที',
+      clock,
+      sub: `อีก ${formatClock(remain)} จะครบ 15 นาที`,
+      pct: Math.min(100, (elapsedSec / DIG_MAX_SEC) * 100)
+    };
+  } else if(elapsedSec < DIG_MAX_SEC){
+    const nextMark = DIG_FLASH_MARKS.find(m=>m > elapsedSec);
+    const sub = nextMark
+      ? `อยู่ในรอบพร้อม — เตือนครั้งถัดไปอีก ${formatClock(nextMark - elapsedSec)} (ครบ ${nextMark/60} นาที)`
+      : 'อยู่ในรอบพร้อม';
+    return {
+      state: 'ready',
+      pillText: 'เข้ารอบ 15 นาทีแล้ว',
+      clock,
+      sub,
+      pct: Math.min(100, (elapsedSec / DIG_MAX_SEC) * 100)
+    };
+  } else {
+    return {
+      state: 'overdue',
+      pillText: 'เกิน 45 นาที',
+      clock,
+      sub: 'เลยเวลาสูงสุดแล้ว ควรไปตรวจสอบ',
+      pct: 100
+    };
+  }
+}
+function formatClock(totalSec){
+  const s = Math.max(0, totalSec);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return h > 0 ? `${h}:${pad2(m)}:${pad2(sec)}` : `${pad2(m)}:${pad2(sec)}`;
+}
+
+// เตรียม/รีเซ็ต ชุด mark ที่กระพริบไปแล้ว โดยไม่กระพริบซ้ำสำหรับเวลาที่ผ่านไปแล้วตอนโหลดหน้าครั้งแรก
+function ensureDigFlashInit(d){
+  if(digFlashState[d.id]) return;
+  const elapsedSec = Math.max(0, Math.floor((Date.now() - d.startTs) / 1000));
+  digFlashState[d.id] = new Set(DIG_FLASH_MARKS.filter(m => m <= elapsedSec));
+}
+
+function triggerDigFlash(id){
+  const card = document.querySelector(`.dig-card[data-dig-id="${id}"]`);
+  if(!card) return;
+  card.classList.remove('dig-flash');
+  // force reflow เพื่อให้ animation เล่นใหม่ได้แม้ class จะเพิ่งถูกลบ
+  void card.offsetWidth;
+  card.classList.add('dig-flash');
+  setTimeout(()=>{ card.classList.remove('dig-flash'); }, 800);
+}
+
+function renderDigPoints(){
+  const grid = document.getElementById('digGrid');
+  if(!grid) return;
+  const search = (document.getElementById('digSearchInput')?.value || '').trim().toLowerCase();
+
+  digPoints.forEach(ensureDigFlashInit);
+
+  let list = digPoints.slice();
+  if(currentDigFilter !== 'all') list = list.filter(d=>d.type === currentDigFilter);
+  if(search) list = list.filter(d=>d.location.toLowerCase().includes(search));
+  list.sort((a,b)=>a.startTs - b.startTs);
+
+  const badge = document.getElementById('digCountBadge');
+  if(badge) badge.textContent = digPoints.length;
+
+  let cooling=0, ready=0, overdue=0;
+  digPoints.forEach(d=>{
+    const st = computeDigState(d.startTs).state;
+    if(st==='cooling') cooling++; else if(st==='ready') ready++; else overdue++;
+  });
+  const elC = document.getElementById('digStatCooling'); if(elC) elC.textContent = cooling;
+  const elR = document.getElementById('digStatReady'); if(elR) elR.textContent = ready;
+  const elO = document.getElementById('digStatOverdue'); if(elO) elO.textContent = overdue;
+
+  if(list.length === 0){
+    grid.innerHTML = `<div class="dig-empty" style="grid-column:1/-1;">${digPoints.length===0 ? 'ยังไม่มีจุดจกที่กำลังจับเวลา — เพิ่มจุดแรกได้จากฟอร์มด้านบน' : 'ไม่พบจุดที่ตรงกับการค้นหา/ตัวกรอง'}</div>`;
+    return;
+  }
+
+  grid.innerHTML = list.map(d=>{
+    const meta = DIG_TYPE_META[d.type] || DIG_TYPE_META['ปูน'];
+    const st = computeDigState(d.startTs);
+    return `
+    <div class="dig-card state-${st.state}" style="--type-color:${meta.color};--type-bg:${meta.bg};" data-dig-id="${d.id}">
+      <div class="dig-top">
+        <span class="dig-type-badge">${meta.icon} ${escapeHtml(d.type)}</span>
+        <span class="dig-state-pill" data-role="pill">${st.pillText}</span>
+      </div>
+      <div class="dig-location" title="${escapeHtml(d.location)}">${escapeHtml(d.location)}</div>
+      <div>
+        <div class="dig-timer" data-role="clock">${st.clock}</div>
+        <div class="dig-timer-sub" data-role="sub">${st.sub}</div>
+      </div>
+      <div class="dig-progress-track"><div class="dig-progress-fill" data-role="bar" style="width:${st.pct}%;"></div></div>
+      <div class="dig-meta">
+        <span>เวลาที่จก: ${escapeHtml(tsToDatetimeLocal(d.startTs).replace('T',' '))}</span>
+      </div>
+      <div class="dig-actions">
+        <button class="dig-btn-spawn" onclick="markDigSpawned('${d.id}')">✅ ออกแล้ว</button>
+        <button class="dig-btn-del" onclick="deleteDigPoint('${d.id}')">🗑️ ลบทิ้ง</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// อัปเดตตัวเลขนาฬิกา/สถานะทุกวินาที โดยไม่ re-render การ์ดทั้งหมด (ลื่นไหลกว่า) และตรวจว่าครบ mark กระพริบหรือยัง
+function tickDigTimers(){
+  if(!digPoints.length) return;
+  const grid = document.getElementById('digGrid');
+  if(!grid || !grid.children.length) return;
+  let needsFullRerender = false;
+  digPoints.forEach(d=>{
+    ensureDigFlashInit(d);
+    const elapsedSec = Math.max(0, Math.floor((Date.now() - d.startTs) / 1000));
+    // ตรวจ mark ที่เพิ่งครบ เพื่อกระพริบ 2 ที
+    DIG_FLASH_MARKS.forEach(mark=>{
+      if(elapsedSec >= mark && !digFlashState[d.id].has(mark)){
+        digFlashState[d.id].add(mark);
+        triggerDigFlash(d.id);
+      }
+    });
+
+    const card = grid.querySelector(`[data-dig-id="${d.id}"]`);
+    if(!card) return;
+    const prevState = card.className.match(/state-(\w+)/)?.[1];
+    const st = computeDigState(d.startTs);
+    if(st.state !== prevState){ needsFullRerender = true; return; }
+    const clockEl = card.querySelector('[data-role="clock"]');
+    const subEl = card.querySelector('[data-role="sub"]');
+    const barEl = card.querySelector('[data-role="bar"]');
+    const pillEl = card.querySelector('[data-role="pill"]');
+    if(clockEl) clockEl.textContent = st.clock;
+    if(subEl) subEl.textContent = st.sub;
+    if(barEl) barEl.style.width = st.pct + '%';
+    if(pillEl) pillEl.textContent = st.pillText;
+  });
+  if(needsFullRerender) renderDigPoints();
+  // อัปเดตแถบสถิติด้านบนเฉยๆ
+  let cooling=0, ready=0, overdue=0;
+  digPoints.forEach(d=>{
+    const s = computeDigState(d.startTs).state;
+    if(s==='cooling') cooling++; else if(s==='ready') ready++; else overdue++;
+  });
+  const elC = document.getElementById('digStatCooling'); if(elC) elC.textContent = cooling;
+  const elR = document.getElementById('digStatReady'); if(elR) elR.textContent = ready;
+  const elO = document.getElementById('digStatOverdue'); if(elO) elO.textContent = overdue;
+}
+
+function startDigTimerLoop(){
+  if(digTimerInterval) return;
+  digTimerInterval = setInterval(tickDigTimers, 1000);
 }
 
 async function performActivity(type){
