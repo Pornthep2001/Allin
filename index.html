@@ -258,6 +258,8 @@
   .tag.borrow{background:rgba(212,175,55,0.15);color:var(--gold-soft);}
   .tag.returned{background:rgba(127,214,164,0.15);color:#7fd6a4;}
   .tag.withdraw{background:rgba(181,50,61,0.18);color:#e8828d;}
+  .tag.buy{background:rgba(181,50,61,0.18);color:#e8828d;}
+  .tag.buyin{background:rgba(93,168,107,0.18);color:#7fd6a4;}
 
   .announce{border-left:3px solid var(--gold);padding:14px 16px;background:rgba(0,0,0,0.18);border-radius:0 10px 10px 0;}
   .announce h3{margin:0 0 6px;font-family:'Playfair Display',serif;font-size:17px;color:var(--ink);}
@@ -444,6 +446,41 @@
   .upload-box:hover{border-color:var(--gold);color:var(--gold-soft);}
   .upload-box input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
   .upload-preview{width:110px;height:110px;border-radius:14px;object-fit:cover;margin:0 auto 10px;display:block;}
+  .photo-remove-btn{
+    position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;
+    background:rgba(181,50,61,0.85);border:1px solid rgba(255,255,255,0.25);color:#fff;
+    font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    line-height:1;transition:transform .12s ease,background .15s;z-index:2;
+  }
+  .photo-remove-btn:hover{background:#b5323d;transform:scale(1.08);}
+
+  /* ---- Delivery Sets (ชุดของประจำเดือน) ---- */
+  .set-builder{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
+  .set-builder-row{display:grid;grid-template-columns:1fr 90px auto;gap:10px;align-items:center;}
+  .set-builder-row button.ghost{padding:9px 12px;color:#e8828d;}
+  @media (max-width:560px){ .set-builder-row{grid-template-columns:1fr 64px auto;} }
+
+  .set-card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:16px;}
+  .set-card{
+    background:rgba(0,0,0,0.18);border:1px solid var(--line);border-radius:14px;
+    padding:14px 16px;display:flex;flex-direction:column;gap:8px;
+    transition:border-color .15s,transform .15s;
+  }
+  .set-card:hover{border-color:var(--gold);transform:translateY(-2px);}
+  .set-card-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;}
+  .set-card-name{font-weight:700;font-size:15px;color:var(--gold-soft);font-family:'Playfair Display',serif;}
+  .set-card-count{font-size:11px;color:var(--ink-dim);background:rgba(255,255,255,0.05);padding:2px 9px;border-radius:999px;flex-shrink:0;}
+  .set-card-chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .set-card-actions{display:flex;gap:8px;margin-top:6px;}
+
+  .set-chip{
+    display:inline-flex;align-items:center;font-size:12px;padding:4px 10px;border-radius:999px;
+    background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.25);color:var(--ink);
+  }
+
+  .set-preview{background:rgba(0,0,0,0.2);border:1px dashed var(--line);border-radius:12px;padding:14px 16px;margin-top:14px;}
+
+  .plan-current{border-color:var(--gold) !important;background:rgba(212,175,55,0.06);}
 
   footer.note{text-align:center;color:var(--ink-dim);font-size:11px;margin-top:30px;letter-spacing:0.3px;}
 
@@ -1388,6 +1425,8 @@
           <select id="brType">
             <option value="borrow">ยืม (ต้องคืน)</option>
             <option value="withdraw">เบิก (ไม่ต้องคืน)</option>
+            <option value="buy">↑ ซื้อ (หักของออกจากคลัง)</option>
+            <option value="buyIn">↓ รับซื้อ (เพิ่มของเข้าคลัง)</option>
           </select>
         </div>
         <div class="field">
@@ -1423,6 +1462,82 @@
 
     <!-- ===== DELIVERY TAB ===== -->
   <section class="panel" id="panel-delivery">
+
+    <!-- ===== DELIVERY SETS: ส่งของด่วน ===== -->
+    <div class="card">
+      <h2>🚀 ส่งของด่วน <span class="eyebrow">Quick Send</span></h2>
+      <p class="hint" style="margin-top:-8px;margin-bottom:14px;">เลือกสมาชิก + เดือน ระบบจะดึงชุดของที่กำหนดไว้สำหรับเดือนนั้นมาบันทึกเข้าคลังให้อัตโนมัติ ไม่ต้องกรอกทีละชิ้น</p>
+      <div class="form-grid">
+        <div class="field">
+          <label>สมาชิกที่ส่ง</label>
+          <select id="qsMember"><option value="">— เลือกสมาชิก —</option></select>
+        </div>
+        <div class="field">
+          <label>เดือนที่ส่ง</label>
+          <input type="month" id="qsMonth" onchange="renderQuickSendPreview()">
+        </div>
+      </div>
+      <div class="set-preview" id="qsPreview">
+        <div class="empty"><span class="icon">📦</span>เลือกเดือนเพื่อดูชุดของที่กำหนดไว้</div>
+      </div>
+      <div class="actions">
+        <button class="primary" onclick="quickSendDelivery()">✅ ส่งของชุดนี้เข้าคลัง</button>
+      </div>
+      <div class="hint warn" id="qsHint" style="display:none;"></div>
+    </div>
+
+    <!-- ===== DELIVERY SETS: จัดการชุดของ ===== -->
+    <div class="card admin-only">
+      <h2>🧩 จัดการชุดของ <span class="eyebrow">Set Builder</span></h2>
+      <div class="form-grid">
+        <div class="field">
+          <label>ชื่อชุดของ</label>
+          <input type="text" id="setName" placeholder="เช่น Set A ประจำเดือน">
+        </div>
+      </div>
+      <div class="set-builder" id="setBuilderRows"></div>
+      <div class="actions">
+        <button class="ghost" onclick="addSetItemRow()">+ เพิ่มของในชุด</button>
+      </div>
+      <div class="form-grid full" style="margin-top:12px;">
+        <div class="field">
+          <label>หมายเหตุ</label>
+          <input type="text" id="setNote" placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)">
+        </div>
+      </div>
+      <div class="actions">
+        <button class="primary" id="setSaveButton" onclick="saveDeliverySet()">บันทึกชุดของ</button>
+        <button class="ghost" id="setCancelButton" style="display:none;" onclick="cancelEditDeliverySet()">ยกเลิกแก้ไข</button>
+      </div>
+      <div class="hint warn" id="setHint" style="display:none;"></div>
+    </div>
+
+    <!-- ===== DELIVERY SETS: รายการชุด ===== -->
+    <div class="card">
+      <h2>📋 รายการชุดของ <span class="count-badge" id="setCount">0 ชุด</span></h2>
+      <div class="set-card-grid" id="setList"></div>
+    </div>
+
+    <!-- ===== DELIVERY SETS: กำหนดการรายเดือน ===== -->
+    <div class="card admin-only">
+      <h2>🗓️ กำหนดการรายเดือน <span class="eyebrow">Monthly Plan</span></h2>
+      <p class="hint" style="margin-top:-8px;margin-bottom:14px;">กำหนดว่าเดือนไหนใช้ชุดของชุดใด เช่น เดือนนี้ Set A เดือนหน้า Set B</p>
+      <div class="form-grid">
+        <div class="field">
+          <label>เดือน</label>
+          <input type="month" id="planMonth">
+        </div>
+        <div class="field">
+          <label>ชุดของที่กำหนด</label>
+          <select id="planSet"><option value="">— เลือกชุดของ —</option></select>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="primary" onclick="saveMonthlyPlan()">บันทึกกำหนดการ</button>
+      </div>
+      <div class="list" id="planList"></div>
+    </div>
+
     <div class="card">
       <h2>บันทึกส่งของเข้าแก๊งค์ <span class="eyebrow">Incoming Delivery</span></h2>
       <div class="form-grid">
@@ -1561,7 +1676,9 @@ const KEYS = {
   log: 'allin-activity-log',
   carSignups: 'allin-car-signups',
   sellDrugTimer: 'allin-selldrug-timer',
-  digPoints: 'allin-dig-points'
+  digPoints: 'allin-dig-points',
+  deliverySets: 'allin-delivery-sets',
+  deliveryPlan: 'allin-delivery-plan'
 };
 let members = [];
 let fundEntries = [];
@@ -1579,6 +1696,7 @@ let performedActivities = { sell: [], airdrop: [], box: [], car: [] };
 let performedWork = { steal: [], sellDrug: [] };
 let editingMemberId = null;
 let pendingMemberImage = null;
+let memberImageRemoved = false; // true เฉพาะตอนกดปุ่ม 🗑️ ลบรูปจริง ๆ ต่างจาก "ไม่แตะรูปเลย"
 let pendingItemImage = null;
 let editingItemId = null;
 let editingDeliveryId = null;
@@ -1595,6 +1713,12 @@ const DIG_COOLDOWN_SEC = 15 * 60; // ครบ 15 นาที = เข้าส
 const DIG_MAX_SEC = 45 * 60;      // เกิน 45 นาที = สีเหลือง
 const DIG_FLASH_MARKS = [15*60, 20*60, 25*60, 30*60, 35*60, 45*60]; // นาทีที่ต้องกระพริบแจ้งเตือน
 let digFlashState = {}; // id -> Set ของ mark(sec) ที่กระพริบแจ้งไปแล้วในรอบปัจจุบัน
+
+// ---------- Delivery Sets (ชุดของประจำเดือน) ----------
+let deliverySets = []; // { id, name, items:[{itemId,qty}], note, date, ts }
+let deliveryMonthlyPlan = {}; // { 'YYYY-MM': setId }
+let editingSetId = null;
+let pendingSetItems = []; // [{itemId, qty}] ระหว่างสร้าง/แก้ไขชุดของ
 
 // ---------- Login gate ----------
 // Session state is persisted in localStorage so a logged-in user can
@@ -1890,8 +2014,19 @@ async function previewMemberImage(e){
   const file = e.target.files[0];
   if(!file) return;
   pendingMemberImage = await fileToCompressedDataUrl(file, 200, 0.75);
+  memberImageRemoved = false;
   document.getElementById('memberUploadBox').innerHTML =
-    `<img class="upload-preview" src="${pendingMemberImage}"><input type="file" accept="image/*" id="memberImage" onchange="previewMemberImage(event)">✓ เปลี่ยนรูป`;
+    `<img class="upload-preview" src="${pendingMemberImage}"><input type="file" accept="image/*" id="memberImage" onchange="previewMemberImage(event)">✓ เปลี่ยนรูป
+     <button type="button" class="photo-remove-btn" onclick="event.stopPropagation(); removeMemberImage();" title="ลบรูปนี้">🗑️</button>`;
+}
+// ผู้ใช้กดปุ่มลบรูปที่อัปโหลด/มีอยู่เดิม — ต้องแยกให้ออกจากกรณี "ยังไม่แตะต้องรูปเลย"
+// เพราะ pendingMemberImage=null เพียงอย่างเดียวไม่พอจะบอกเจตนา (ตอนแก้ไขสมาชิกที่มีรูปอยู่แล้ว
+// ถ้าไม่แตะอะไรเลย ก็อยากให้ระบบคงรูปเดิมไว้ ไม่ใช่ไปลบทิ้ง)
+function removeMemberImage(){
+  pendingMemberImage = null;
+  memberImageRemoved = true;
+  document.getElementById('memberUploadBox').innerHTML =
+    `📷 อัปโหลดรูป<input type="file" accept="image/*" id="memberImage" onchange="previewMemberImage(event)">`;
 }
 async function previewItemImage(e){
   const file = e.target.files[0];
@@ -2066,7 +2201,9 @@ function exportDataSet(){
     pointsList,
     performedActivities,
     performedWork,
-    activityLog
+    activityLog,
+    deliverySets,
+    deliveryMonthlyPlan
   };
   downloadObjectAsJson(payload, 'allin-data-export');
 }
@@ -2094,6 +2231,8 @@ function importDataSet(event){
       performedActivities = data.performedActivities && typeof data.performedActivities === 'object' ? data.performedActivities : { sell: [], airdrop: [], box: [], car: [] };
       performedWork = data.performedWork && typeof data.performedWork === 'object' ? data.performedWork : { steal: [], sellDrug: [] };
       activityLog = Array.isArray(data.activityLog) ? data.activityLog : [];
+      deliverySets = Array.isArray(data.deliverySets) ? data.deliverySets : [];
+      deliveryMonthlyPlan = data.deliveryMonthlyPlan && typeof data.deliveryMonthlyPlan === 'object' ? data.deliveryMonthlyPlan : {};
       await saveKey(KEYS.members, members);
       await saveKey(KEYS.fund, fundEntries);
       await saveKey(KEYS.announce, announcements);
@@ -2108,6 +2247,8 @@ function importDataSet(event){
       await saveKey(KEYS.activityRecords, performedActivities);
       await saveKey(KEYS.workRecordsPerformed, performedWork);
       await saveKey(KEYS.log, activityLog);
+      await saveKey(KEYS.deliverySets, deliverySets);
+      await saveKey(KEYS.deliveryPlan, deliveryMonthlyPlan);
       renderMembers();
       renderFund();
       renderAnnounce();
@@ -2115,6 +2256,8 @@ function importDataSet(event){
       renderBorrow();
       renderDeliverySelects();
       renderDelivery();
+      renderDeliverySets();
+      renderMonthlyPlan();
       renderRules();
       ['sell','airdrop','box','car'].forEach(t=>renderActivities(t));
       ['steal','sellDrug'].forEach(t=>renderWork(t));
@@ -2151,6 +2294,8 @@ async function loadAll(){
   carSignups = await loadKey(KEYS.carSignups, []);
   sellDrugTimerState = await loadKey(KEYS.sellDrugTimer, { spawnTime: '', hasSeconds: false, sold: [] });
   digPoints = await loadKey(KEYS.digPoints, []);
+  deliverySets = await loadKey(KEYS.deliverySets, []);
+  deliveryMonthlyPlan = await loadKey(KEYS.deliveryPlan, {});
   if(ensureMemberOrder()){ await saveKey(KEYS.members, members); }
   renderMembers();
   renderFund();
@@ -2159,6 +2304,8 @@ async function loadAll(){
   renderBorrow();
   renderDeliverySelects();
   renderDelivery();
+  renderDeliverySets();
+  renderMonthlyPlan();
   renderRules();
   // render all activity/work sub-views so lists are populated
   ['sell','airdrop','box'].forEach(t=>renderActivities(t));
@@ -2220,6 +2367,8 @@ async function loadAllSilently(){
   carSignups = await loadKey(KEYS.carSignups, []);
   sellDrugTimerState = await loadKey(KEYS.sellDrugTimer, { spawnTime: '', hasSeconds: false, sold: [] });
   digPoints = await loadKey(KEYS.digPoints, []);
+  deliverySets = await loadKey(KEYS.deliverySets, []);
+  deliveryMonthlyPlan = await loadKey(KEYS.deliveryPlan, {});
   renderMembers();
   renderFund();
   renderAnnounce();
@@ -2227,6 +2376,8 @@ async function loadAllSilently(){
   renderBorrow();
   renderDeliverySelects();
   renderDelivery();
+  renderDeliverySets();
+  renderMonthlyPlan();
   renderRules();
   ['sell','airdrop','box'].forEach(t=>renderActivities(t));
   ['steal','sellDrug'].forEach(t=>renderWork(t));
@@ -2485,7 +2636,7 @@ async function addMember(){
     if(m){
       m.name = name; m.role = role; m.phone = phone; m.ic = ic; m.birthday = birthday;
       m.weapon1 = weapon1; m.level1 = level1; m.weapon2 = weapon2; m.level2 = level2; m.weapon3 = weapon3; m.level3 = level3;
-      m.note = note; m.image = pendingMemberImage || m.image; m.ts = Date.now();
+      m.note = note; m.image = memberImageRemoved ? null : (pendingMemberImage || m.image); m.ts = Date.now();
       await saveKey(KEYS.members, members);
       await logAction(`แก้ไขสมาชิก: ${m.name}`);
       // exit edit mode
@@ -2510,6 +2661,7 @@ async function addMember(){
   document.getElementById('memberNote').value = '';
   document.getElementById('memberUploadBox').innerHTML = `📷 อัปโหลดรูป<input type="file" accept="image/*" id="memberImage" onchange="previewMemberImage(event)">`;
   pendingMemberImage = null;
+  memberImageRemoved = false;
   renderMembers();
   renderStory();
   if(!wasEdit){
@@ -2542,8 +2694,10 @@ function startEditMember(id){
   // from a member with a photo to one without kept showing the old photo
   // and could even save it onto the wrong member.
   pendingMemberImage = m.image || null;
+  memberImageRemoved = false;
   if(pendingMemberImage){
-    document.getElementById('memberUploadBox').innerHTML = `<img class="upload-preview" src="${pendingMemberImage}"><input type="file" accept="image/*" id="memberImage" onchange="previewMemberImage(event)">✓ เปลี่ยนรูป`;
+    document.getElementById('memberUploadBox').innerHTML = `<img class="upload-preview" src="${pendingMemberImage}"><input type="file" accept="image/*" id="memberImage" onchange="previewMemberImage(event)">✓ เปลี่ยนรูป
+     <button type="button" class="photo-remove-btn" onclick="event.stopPropagation(); removeMemberImage();" title="ลบรูปนี้">🗑️</button>`;
   } else {
     document.getElementById('memberUploadBox').innerHTML = `📷 อัปโหลดรูป<input type="file" accept="image/*" id="memberImage" onchange="previewMemberImage(event)">`;
   }
@@ -2564,6 +2718,7 @@ function cancelEditMember(){
   document.getElementById('memberLevel3').value = '1';
   document.getElementById('memberNote').value = '';
   pendingMemberImage = null;
+  memberImageRemoved = false;
   document.getElementById('memberUploadBox').innerHTML = `📷 อัปโหลดรูป<input type="file" accept="image/*" id="memberImage" onchange="previewMemberImage(event)">`;
   document.getElementById('memberSaveButton').textContent = 'เพิ่มสมาชิก';
   document.getElementById('memberCancelButton').style.display = 'none';
@@ -4288,14 +4443,21 @@ function renderBorrow(){
     return;
   }
   const sorted = [...borrowRecords].sort((a,b)=> b.ts - a.ts);
-  list.innerHTML = sorted.map(r=>`
+  const BR_TYPE_INFO = {
+    borrow: { dir:'', tagFn: r => r.returned ? { cls:'returned', label:'คืนแล้ว' } : { cls:'borrow', label:'ยืมอยู่' } },
+    withdraw: { dir:'↑ออก', tagFn: () => ({ cls:'withdraw', label:'เบิกแล้ว' }) },
+    buy: { dir:'↑ออก', tagFn: () => ({ cls:'buy', label:'ซื้อแล้ว' }) },
+    buyIn: { dir:'↓เข้า', tagFn: () => ({ cls:'buyin', label:'รับซื้อแล้ว' }) }
+  };
+  list.innerHTML = sorted.map(r=>{
+    const info = BR_TYPE_INFO[r.type] || BR_TYPE_INFO.withdraw;
+    const tagData = info.tagFn(r);
+    return `
     <div class="row-item">
       <div>
         <div>
           <strong>${escapeHtml(itemName(r.itemId))}</strong> × ${r.qty}
-          <span class="tag ${r.type==='borrow' ? (r.returned?'returned':'borrow') : 'withdraw'}">
-            ${r.type==='borrow' ? (r.returned? 'คืนแล้ว' : 'ยืมอยู่') : 'เบิกแล้ว'}
-          </span>
+          <span class="tag ${tagData.cls}">${info.dir ? info.dir+' ' : ''}${tagData.label}</span>
         </div>
         <div class="meta">${escapeHtml(memberName(r.memberId))} ${r.note? '· '+escapeHtml(r.note):''} · ${r.date}</div>
       </div>
@@ -4304,7 +4466,8 @@ function renderBorrow(){
         <button class="ghost admin-only" onclick="deleteBorrow('${r.id}')">ลบ</button>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 async function addBorrow(){
@@ -4317,8 +4480,14 @@ async function addBorrow(){
   if(!memberId){ alert('เลือกชื่อผู้เบิก/ยืม'); return; }
   const it = inventory.find(x=>x.id===itemId);
   if(!it){ alert('ไม่พบของชิ้นนี้ในคลัง'); return; }
-  if(qty > it.qty){ alert(`ของในคลังมีไม่พอ (คงเหลือ ${it.qty})`); return; }
-  it.qty -= qty;
+  if(type === 'buyIn'){
+    // รับซื้อ = ของไหลเข้าคลัง ไม่ต้องเช็คสต็อกคงเหลือ
+    it.qty += qty;
+  } else {
+    // ยืม / เบิก / ซื้อ = ของไหลออกจากคลัง ต้องมีของพอ
+    if(qty > it.qty){ alert(`ของในคลังมีไม่พอ (คงเหลือ ${it.qty})`); return; }
+    it.qty -= qty;
+  }
   borrowRecords.push({ id: uid(), type, itemId, qty, memberId, note, returned:false, date: nowStr(), ts: Date.now() });
   document.getElementById('brQty').value='1';
   document.getElementById('brNote').value='';
@@ -4326,7 +4495,8 @@ async function addBorrow(){
   renderBorrow();
   await saveKey(KEYS.items, inventory);
   await saveKey(KEYS.borrow, borrowRecords);
-  await logAction(`${type==='borrow'?'ยืมของ':'เบิกของ'}: ${it.name} x${qty} (โดย ${memberName(memberId)})`);
+  const BR_LOG_LABEL = { borrow:'ยืมของ', withdraw:'เบิกของ', buy:'ซื้อของ', buyIn:'รับซื้อของ' };
+  await logAction(`${BR_LOG_LABEL[type]||'เบิกของ'}: ${it.name} x${qty} (โดย ${memberName(memberId)})`);
 }
 async function markReturned(id){
   const rec = borrowRecords.find(r=>r.id===id);
@@ -4345,7 +4515,15 @@ async function deleteBorrow(id){
   const rec = borrowRecords.find(r=>r.id===id);
   if(rec){
     const it = inventory.find(x=>x.id===rec.itemId);
-    if(it && !(rec.type==='borrow' && rec.returned)) it.qty += rec.qty;
+    if(it){
+      if(rec.type === 'buyIn'){
+        // รับซื้อ ตอนบันทึกเพิ่มของเข้าคลัง -> ลบรายการต้องหักออกคืน (ทิศตรงข้าม)
+        it.qty = Math.max(0, it.qty - rec.qty);
+      } else if(!(rec.type==='borrow' && rec.returned)){
+        // ยืม(ยังไม่คืน) / เบิก / ซื้อ ตอนบันทึกหักของออกจากคลัง -> ลบรายการต้องคืนกลับเข้าคลัง
+        it.qty += rec.qty;
+      }
+    }
   }
   borrowRecords = borrowRecords.filter(r=>r.id!==id);
   renderItems();
@@ -4363,6 +4541,17 @@ function renderDeliverySelects(){
     members.map(m=>`<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
   document.getElementById('dvItem').innerHTML = itemOpts;
   document.getElementById('dvSender').innerHTML = senderOpts;
+  const qsMember = document.getElementById('qsMember');
+  if(qsMember) qsMember.innerHTML = senderOpts;
+  const qsMonth = document.getElementById('qsMonth');
+  if(qsMonth && !qsMonth.value) qsMonth.value = currentMonthStr();
+  const planSet = document.getElementById('planSet');
+  if(planSet){
+    planSet.innerHTML = '<option value="">— เลือกชุดของ —</option>' +
+      deliverySets.map(s=>`<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+  }
+  renderSetBuilderRows();
+  renderQuickSendPreview();
   const hint = document.getElementById('deliveryHint');
   if(inventory.length===0 && members.length===0){
     hint.textContent = 'ยังไม่มีสมาชิกและของในระบบ ไปเพิ่มที่แท็บอื่น ๆ ก่อน';
@@ -4514,6 +4703,254 @@ async function updateDelivery(id){
   await saveKey(KEYS.delivery, deliveryRecords);
   await saveKey(KEYS.items, inventory);
   await logAction(`อัปเดตรายการส่ง: ${itemName(itemId)} x${newQty} (จาก ${oldQty})`);
+}
+
+// ---------- DELIVERY SETS (ชุดของประจำเดือน) ----------
+function currentMonthStr(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+}
+function monthLabel(monthStr){
+  const THAI_MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  if(!monthStr) return '';
+  const [y,m] = monthStr.split('-').map(Number);
+  if(!y || !m || !THAI_MONTHS[m-1]) return monthStr;
+  return `${THAI_MONTHS[m-1]} ${y}`;
+}
+
+// ---- Set builder (สร้าง/แก้ไขชุดของ) ----
+function renderSetBuilderRows(){
+  const wrap = document.getElementById('setBuilderRows');
+  if(!wrap) return;
+  if(pendingSetItems.length===0){
+    wrap.innerHTML = '<div class="hint">ยังไม่มีของในชุดนี้ กด "+ เพิ่มของในชุด" เพื่อเริ่มเพิ่มรายการ</div>';
+    return;
+  }
+  const itemOptions = selectedId => '<option value="">— เลือกของ —</option>' +
+    inventory.map(it=>`<option value="${it.id}" ${selectedId===it.id?'selected':''}>${escapeHtml(it.name)} (คงเหลือ ${it.qty})</option>`).join('');
+  wrap.innerHTML = pendingSetItems.map((row,idx)=>`
+    <div class="set-builder-row">
+      <select onchange="updateSetItemRow(${idx},'itemId',this.value)">${itemOptions(row.itemId)}</select>
+      <input type="number" min="1" value="${row.qty}" onchange="updateSetItemRow(${idx},'qty',this.value)">
+      <button type="button" class="ghost" onclick="removeSetItemRow(${idx})" title="ลบรายการนี้ออกจากชุด">✕</button>
+    </div>
+  `).join('');
+}
+function addSetItemRow(){
+  pendingSetItems.push({ itemId:'', qty:1 });
+  renderSetBuilderRows();
+}
+function updateSetItemRow(idx, field, value){
+  if(!pendingSetItems[idx]) return;
+  pendingSetItems[idx][field] = field==='qty' ? Math.max(1, parseInt(value)||1) : value;
+}
+function removeSetItemRow(idx){
+  pendingSetItems.splice(idx,1);
+  renderSetBuilderRows();
+}
+function resetSetBuilder(){
+  document.getElementById('setName').value='';
+  document.getElementById('setNote').value='';
+  pendingSetItems = [];
+  renderSetBuilderRows();
+  document.getElementById('setSaveButton').textContent='บันทึกชุดของ';
+  document.getElementById('setCancelButton').style.display='none';
+}
+async function saveDeliverySet(){
+  if(!isAdmin()){ alert('เฉพาะผู้ดูแลระบบเท่านั้นที่จัดการชุดของได้'); return; }
+  const name = document.getElementById('setName').value.trim();
+  const note = document.getElementById('setNote').value.trim();
+  const hint = document.getElementById('setHint');
+  if(!name){ hint.textContent='กรอกชื่อชุดของ'; hint.style.display='block'; return; }
+  const items = pendingSetItems
+    .filter(it=> it.itemId && it.qty > 0)
+    .map(it=> ({ itemId: it.itemId, qty: it.qty }));
+  if(items.length===0){ hint.textContent='เพิ่มของอย่างน้อย 1 รายการในชุด'; hint.style.display='block'; return; }
+  hint.style.display='none';
+  if(editingSetId){
+    const s = deliverySets.find(x=>x.id===editingSetId);
+    if(s){ s.name=name; s.items=items; s.note=note; s.ts=Date.now(); }
+    await logAction(`แก้ไขชุดของ: ${name}`);
+    editingSetId = null;
+  } else {
+    deliverySets.push({ id: uid(), name, items, note, date: nowStr(), ts: Date.now() });
+    await logAction(`สร้างชุดของใหม่: ${name} (${items.length} รายการ)`);
+  }
+  resetSetBuilder();
+  renderDeliverySets();
+  renderDeliverySelects();
+  renderMonthlyPlan();
+  await saveKey(KEYS.deliverySets, deliverySets);
+}
+function startEditDeliverySet(id){
+  if(!isAdmin()) return;
+  const s = deliverySets.find(x=>x.id===id);
+  if(!s) return;
+  editingSetId = id;
+  document.getElementById('setName').value = s.name;
+  document.getElementById('setNote').value = s.note || '';
+  pendingSetItems = s.items.map(it=>({ itemId: it.itemId, qty: it.qty }));
+  renderSetBuilderRows();
+  document.getElementById('setSaveButton').textContent = 'บันทึกการแก้ไข';
+  document.getElementById('setCancelButton').style.display = 'inline-block';
+  const builderCard = document.getElementById('setBuilderRows')?.closest('.card');
+  if(builderCard) builderCard.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+function cancelEditDeliverySet(){
+  editingSetId = null;
+  resetSetBuilder();
+}
+async function deleteDeliverySet(id){
+  if(!isAdmin()){ alert('เฉพาะผู้ดูแลระบบเท่านั้นที่ลบชุดของได้'); return; }
+  const s = deliverySets.find(x=>x.id===id);
+  if(!confirm(`ลบชุดของ "${s ? s.name : ''}" ?`)) return;
+  deliverySets = deliverySets.filter(x=>x.id!==id);
+  // ลบกำหนดการรายเดือนที่ยังอ้างถึงชุดของนี้อยู่ ไม่ให้ค้าง reference ที่หายไปแล้ว
+  Object.keys(deliveryMonthlyPlan).forEach(month=>{
+    if(deliveryMonthlyPlan[month] === id) delete deliveryMonthlyPlan[month];
+  });
+  if(editingSetId === id){ editingSetId = null; resetSetBuilder(); }
+  renderDeliverySets();
+  renderDeliverySelects();
+  renderMonthlyPlan();
+  await saveKey(KEYS.deliverySets, deliverySets);
+  await saveKey(KEYS.deliveryPlan, deliveryMonthlyPlan);
+  await logAction(`ลบชุดของ: ${s ? s.name : id}`);
+}
+function renderDeliverySets(){
+  const grid = document.getElementById('setList');
+  if(!grid) return;
+  const countEl = document.getElementById('setCount');
+  if(countEl) countEl.textContent = deliverySets.length + ' ชุด';
+  if(deliverySets.length===0){
+    grid.innerHTML = '<div class="empty"><span class="icon">🧩</span>ยังไม่มีการสร้างชุดของ</div>';
+    return;
+  }
+  const sorted = [...deliverySets].sort((a,b)=> a.name.localeCompare(b.name,'th'));
+  grid.innerHTML = sorted.map(s=>{
+    const chips = s.items.map(it=> `<span class="set-chip">${escapeHtml(itemName(it.itemId))} × ${it.qty}</span>`).join('');
+    return `
+    <div class="set-card">
+      <div class="set-card-head">
+        <div class="set-card-name">${escapeHtml(s.name)}</div>
+        <div class="set-card-count">${s.items.length} รายการ</div>
+      </div>
+      <div class="set-card-chips">${chips || '<span class="hint">ยังไม่มีของในชุดนี้</span>'}</div>
+      ${s.note ? `<div class="meta" style="color:var(--ink-dim);">📝 ${escapeHtml(s.note)}</div>` : ''}
+      <div class="set-card-actions admin-only">
+        <button class="ghost" onclick="startEditDeliverySet('${s.id}')">แก้ไข</button>
+        <button class="ghost" style="color:#e8828d;" onclick="deleteDeliverySet('${s.id}')">ลบ</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ---- Monthly plan (กำหนดชุดของให้แต่ละเดือน) ----
+async function saveMonthlyPlan(){
+  if(!isAdmin()){ alert('เฉพาะผู้ดูแลระบบเท่านั้นที่กำหนดการรายเดือนได้'); return; }
+  const month = document.getElementById('planMonth').value;
+  const setId = document.getElementById('planSet').value;
+  if(!month){ alert('เลือกเดือนที่ต้องการกำหนด'); return; }
+  if(!setId){ alert('เลือกชุดของที่จะกำหนดให้เดือนนี้'); return; }
+  deliveryMonthlyPlan[month] = setId;
+  document.getElementById('planMonth').value = '';
+  document.getElementById('planSet').value = '';
+  renderMonthlyPlan();
+  renderQuickSendPreview();
+  await saveKey(KEYS.deliveryPlan, deliveryMonthlyPlan);
+  const s = deliverySets.find(x=>x.id===setId);
+  await logAction(`กำหนดชุดของประจำเดือน ${monthLabel(month)}: ${s ? s.name : setId}`);
+}
+async function deleteMonthlyPlan(month){
+  if(!isAdmin()){ alert('เฉพาะผู้ดูแลระบบเท่านั้นที่ลบกำหนดการได้'); return; }
+  delete deliveryMonthlyPlan[month];
+  renderMonthlyPlan();
+  renderQuickSendPreview();
+  await saveKey(KEYS.deliveryPlan, deliveryMonthlyPlan);
+  await logAction(`ลบกำหนดการชุดของประจำเดือน ${monthLabel(month)}`);
+}
+function renderMonthlyPlan(){
+  const list = document.getElementById('planList');
+  if(!list) return;
+  const months = Object.keys(deliveryMonthlyPlan).sort();
+  if(months.length===0){
+    list.innerHTML = '<div class="empty"><span class="icon">🗓️</span>ยังไม่ได้กำหนดชุดของให้เดือนไหนไว้เลย</div>';
+    return;
+  }
+  const curMonth = currentMonthStr();
+  list.innerHTML = months.map(month=>{
+    const setId = deliveryMonthlyPlan[month];
+    const s = deliverySets.find(x=>x.id===setId);
+    const isCurrent = month === curMonth;
+    return `
+    <div class="row-item ${isCurrent ? 'plan-current' : ''}">
+      <div>
+        <div><strong>${monthLabel(month)}</strong> ${isCurrent ? '<span class="tag borrow">เดือนนี้</span>' : ''}</div>
+        <div class="meta">ชุดของ: ${s ? escapeHtml(s.name) : '⚠️ ชุดของนี้ถูกลบไปแล้ว'}</div>
+      </div>
+      <div class="admin-only">
+        <button class="ghost" style="color:#e8828d;" onclick="deleteMonthlyPlan('${month}')">ลบกำหนดการ</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ---- Quick send (ส่งของด่วนตามชุดประจำเดือน) ----
+function renderQuickSendPreview(){
+  const monthInput = document.getElementById('qsMonth');
+  const preview = document.getElementById('qsPreview');
+  if(!monthInput || !preview) return;
+  const month = monthInput.value;
+  if(!month){
+    preview.innerHTML = '<div class="empty"><span class="icon">📦</span>เลือกเดือนเพื่อดูชุดของที่กำหนดไว้</div>';
+    return;
+  }
+  const setId = deliveryMonthlyPlan[month];
+  const s = deliverySets.find(x=>x.id===setId);
+  if(!s || !s.items.length){
+    preview.innerHTML = `<div class="empty"><span class="icon">⚠️</span>ยังไม่ได้กำหนดชุดของสำหรับ ${monthLabel(month)}</div>`;
+    return;
+  }
+  const chips = s.items.map(it=>{
+    const inv = inventory.find(x=>x.id===it.itemId);
+    const shortage = inv && inv.qty < it.qty;
+    return `<span class="set-chip"${shortage ? ' style="border-color:#e8828d;color:#e8828d;"' : ''}>${escapeHtml(itemName(it.itemId))} × ${it.qty}</span>`;
+  }).join('');
+  preview.innerHTML = `
+    <div class="set-card-name">${escapeHtml(s.name)} <span class="tag borrow">${monthLabel(month)}</span></div>
+    <div class="set-card-chips" style="margin-top:8px;">${chips}</div>
+  `;
+}
+async function quickSendDelivery(){
+  const memberId = document.getElementById('qsMember').value;
+  const month = document.getElementById('qsMonth').value;
+  const hint = document.getElementById('qsHint');
+  if(!memberId){ hint.textContent='เลือกสมาชิกที่จะส่งของ'; hint.style.display='block'; return; }
+  if(!month){ hint.textContent='เลือกเดือนที่จะส่ง'; hint.style.display='block'; return; }
+  const setId = deliveryMonthlyPlan[month];
+  const s = deliverySets.find(x=>x.id===setId);
+  if(!s || !s.items.length){ hint.textContent=`ยังไม่ได้กำหนดชุดของสำหรับ ${monthLabel(month)}`; hint.style.display='block'; return; }
+  hint.style.display='none';
+  const batchId = uid();
+  let addedCount = 0;
+  s.items.forEach(row=>{
+    const it = inventory.find(x=>x.id===row.itemId);
+    if(!it) return; // ของในชุดถูกลบออกจากคลังไปแล้ว ข้ามรายการนี้
+    deliveryRecords.push({
+      id: uid(), itemId: row.itemId, qty: row.qty, senderId: memberId,
+      status: 'received', note: `ส่งของด่วนตามชุด "${s.name}" (${monthLabel(month)})`,
+      batchId, date: nowStr(), ts: Date.now()
+    });
+    it.qty += row.qty;
+    addedCount++;
+  });
+  if(addedCount===0){ hint.textContent='ของทุกชิ้นในชุดนี้ถูกลบออกจากคลังไปแล้ว'; hint.style.display='block'; return; }
+  renderDelivery();
+  renderItems();
+  await saveKey(KEYS.delivery, deliveryRecords);
+  await saveKey(KEYS.items, inventory);
+  await logAction(`ส่งของด่วนตามชุด "${s.name}" ให้ ${memberName(memberId)} (${monthLabel(month)})`);
+  alert('บันทึกส่งของชุดนี้เข้าคลังเรียบร้อยแล้ว');
 }
 
 </script>
