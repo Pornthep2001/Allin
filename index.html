@@ -1049,8 +1049,8 @@
           </div>
           <div class="field">
             <label>เวลาที่จกไป</label>
-            <input type="datetime-local" id="digStartTime" lang="en-GB" step="60">
-            <div class="hint">รูปแบบเวลา 24 ชม. เช่น 19:50, 08:00 (ไม่มี AM/PM)</div>
+            <input type="time" id="digStartTime" lang="en-GB" step="60">
+            <div class="hint">รูปแบบเวลา 24 ชม. เช่น 19:50, 08:00 (ไม่มี AM/PM ไม่ต้องระบุวันที่ — ระบบเทียบกับเวลาปัจจุบันให้อัตโนมัติตอนกดบันทึก)</div>
           </div>
         </div>
         <div class="actions">
@@ -1341,7 +1341,7 @@
   <!-- ===== ANNOUNCE TAB ===== -->
   <section class="panel" id="panel-announce">
     <div class="card admin-only">
-      <h2>ตั้งประกาศใหม่ <span class="eyebrow">Announcement</span></h2>
+      <h2 id="annFormTitle">ตั้งประกาศใหม่ <span class="eyebrow">Announcement</span></h2>
       <div class="form-grid">
         <div class="field">
           <label>หัวข้อ</label>
@@ -1359,12 +1359,13 @@
         </div>
       </div>
       <div class="actions">
-        <button class="primary" onclick="addAnnouncement()">ประกาศ</button>
+        <button class="primary" id="annSaveButton" onclick="addAnnouncement()">ประกาศ</button>
+        <button class="ghost" id="annCancelButton" style="display:none;" onclick="cancelEditAnnounce()">ยกเลิกแก้ไข</button>
       </div>
     </div>
 
     <div class="card">
-      <h2>ประกาศทั้งหมด</h2>
+      <h2>ประกาศทั้งหมด <span class="hint admin-only" style="font-size:11.5px;">(แอดมินกดที่การ์ดเพื่อแก้ไข)</span></h2>
       <div class="list" id="announceList"></div>
     </div>
   </section>
@@ -1422,7 +1423,7 @@
       <div class="form-grid">
         <div class="field">
           <label>ประเภท</label>
-          <select id="brType">
+          <select id="brType" onchange="toggleBrPriceField()">
             <option value="borrow">ยืม (ต้องคืน)</option>
             <option value="withdraw">เบิก (ไม่ต้องคืน)</option>
             <option value="buy">↑ ซื้อ (หักของออกจากคลัง)</option>
@@ -1440,6 +1441,10 @@
         <div class="field">
           <label>ชื่อผู้เบิก/ยืม</label>
           <select id="brName"><option value="">— เลือกสมาชิก —</option></select>
+        </div>
+        <div class="field" id="brPriceField" style="display:none;">
+          <label>ราคา (บาท)</label>
+          <input type="number" id="brPrice" placeholder="0" min="0" step="1">
         </div>
       </div>
       <div class="form-grid full" style="margin-top:12px;">
@@ -1682,6 +1687,7 @@ const KEYS = {
 };
 let members = [];
 let fundEntries = [];
+let editingAnnounceId = null;
 let announcements = [];
 let inventory = [];
 let borrowRecords = [];
@@ -2815,10 +2821,10 @@ function renderAnnounce(){
   }
   const sorted = [...announcements].sort((a,b)=> b.ts - a.ts);
   list.innerHTML = sorted.map(a=>`
-    <div class="announce">
+    <div class="announce" ${isAdmin()?`onclick="editAnnounce('${a.id}')" style="cursor:pointer;"`:''}>
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
         <h3>${escapeHtml(a.title)}</h3>
-        <button class="ghost admin-only" onclick="deleteAnnounce('${a.id}')">ลบ</button>
+        <button class="ghost admin-only" onclick="event.stopPropagation(); deleteAnnounce('${a.id}')">ลบ</button>
       </div>
       <p>${escapeHtml(a.content)}</p>
       <div class="meta">โดย ${escapeHtml(memberName(a.authorId))} · ${a.date}</div>
@@ -2847,17 +2853,51 @@ async function addAnnouncement(){
   const authorId = document.getElementById('annAuthor').value;
   const content = document.getElementById('annContent').value.trim();
   if(!title || !content){ alert('กรอกหัวข้อและรายละเอียดประกาศ'); return; }
-  announcements.push({ id: uid(), title, authorId, content, date: nowStr(), ts: Date.now() });
+  if(editingAnnounceId){
+    const a = announcements.find(x=>x.id===editingAnnounceId);
+    if(a){ a.title = title; a.authorId = authorId; a.content = content; a.ts = Date.now(); }
+    await logAction(`แก้ไขประกาศ: ${title}`);
+    editingAnnounceId = null;
+  } else {
+    announcements.push({ id: uid(), title, authorId, content, date: nowStr(), ts: Date.now() });
+    await logAction(`ตั้งประกาศ: ${title}`);
+  }
   document.getElementById('annTitle').value='';
   document.getElementById('annContent').value='';
+  document.getElementById('annAuthor').value='';
+  document.getElementById('annFormTitle').innerHTML = 'ตั้งประกาศใหม่ <span class="eyebrow">Announcement</span>';
+  document.getElementById('annSaveButton').textContent = 'ประกาศ';
+  document.getElementById('annCancelButton').style.display = 'none';
   renderAnnounce();
   await saveKey(KEYS.announce, announcements);
-  await logAction(`ตั้งประกาศ: ${title}`);
+}
+function editAnnounce(id){
+  if(!isAdmin()) return;
+  const a = announcements.find(x=>x.id===id);
+  if(!a) return;
+  editingAnnounceId = id;
+  document.getElementById('annTitle').value = a.title;
+  document.getElementById('annAuthor').value = a.authorId || '';
+  document.getElementById('annContent').value = a.content;
+  document.getElementById('annFormTitle').innerHTML = 'แก้ไขประกาศ <span class="eyebrow">Announcement</span>';
+  document.getElementById('annSaveButton').textContent = 'บันทึกการแก้ไข';
+  document.getElementById('annCancelButton').style.display = 'inline-block';
+  document.getElementById('annFormTitle').closest('.card').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+function cancelEditAnnounce(){
+  editingAnnounceId = null;
+  document.getElementById('annTitle').value='';
+  document.getElementById('annContent').value='';
+  document.getElementById('annAuthor').value='';
+  document.getElementById('annFormTitle').innerHTML = 'ตั้งประกาศใหม่ <span class="eyebrow">Announcement</span>';
+  document.getElementById('annSaveButton').textContent = 'ประกาศ';
+  document.getElementById('annCancelButton').style.display = 'none';
 }
 async function deleteAnnounce(id){
   if(!isAdmin()){ alert('บัญชีนี้ไม่มีสิทธิ์ลบประกาศ'); return; }
   const target = announcements.find(a=>a.id===id);
   announcements = announcements.filter(a=>a.id!==id);
+  if(editingAnnounceId === id) cancelEditAnnounce();
   renderAnnounce();
   await saveKey(KEYS.announce, announcements);
   await logAction(`ลบประกาศ: ${target ? target.title : id}`);
@@ -3679,9 +3719,29 @@ function datetimeLocalToTs(val){
   return isNaN(t) ? Date.now() : t;
 }
 
+// แปลง timestamp (ms) -> ค่าใส่ input type=time (เอาเฉพาะเวลา ไม่มีวันที่/AM-PM)
+function tsToDigTime(ts){
+  const d = new Date(ts);
+  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+// แปลงค่าจาก input type=time ("HH:MM") -> timestamp โดยเทียบกับเวลาปัจจุบันตอนกดบันทึก
+// ถ้าเวลาที่กรอกมากกว่าเวลาปัจจุบัน (เป็นไปไม่ได้ที่จะจกไปในอนาคต) แปลว่าจกไปตั้งแต่ก่อนเที่ยงคืน (เมื่อคืน) ให้ถอยกลับไป 1 วัน
+function digTimeToTs(val){
+  if(!val) return Date.now();
+  const parts = val.split(':').map(Number);
+  const h = parts[0], m = parts[1];
+  if(isNaN(h) || isNaN(m)) return Date.now();
+  const now = new Date();
+  const candidate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
+  if(candidate.getTime() > now.getTime()){
+    candidate.setDate(candidate.getDate() - 1);
+  }
+  return candidate.getTime();
+}
+
 function setDigStartTimeToNow(){
   const el = document.getElementById('digStartTime');
-  if(el && !el.value) el.value = tsToDatetimeLocal(Date.now());
+  if(el && !el.value) el.value = tsToDigTime(Date.now());
 }
 
 function selectDigType(type){
@@ -3708,7 +3768,7 @@ async function addDigPoint(){
     locationEl.focus();
     return;
   }
-  const startTs = timeEl.value ? datetimeLocalToTs(timeEl.value) : Date.now();
+  const startTs = timeEl.value ? digTimeToTs(timeEl.value) : Date.now();
   const entry = {
     id: uid(),
     type: currentDigType,
@@ -3722,7 +3782,7 @@ async function addDigPoint(){
   await saveKey(KEYS.digPoints, digPoints);
   await logAction(`แจ้งจุดจก ${currentDigType} — ${location}`);
   locationEl.value = '';
-  timeEl.value = tsToDatetimeLocal(Date.now());
+  timeEl.value = tsToDigTime(Date.now());
   renderDigPoints();
 }
 
@@ -3852,7 +3912,7 @@ function renderDigPoints(){
       </div>
       <div class="dig-progress-track"><div class="dig-progress-fill" data-role="bar" style="width:${st.pct}%;"></div></div>
       <div class="dig-meta">
-        <span>เวลาที่จก: ${escapeHtml(tsToDatetimeLocal(d.startTs).replace('T',' '))}</span>
+        <span>เวลาที่จก: ${escapeHtml(tsToDigTime(d.startTs))}</span>
       </div>
       <div class="dig-actions">
         <button class="dig-btn-spawn" onclick="markDigSpawned('${d.id}')">✅ ออกแล้ว</button>
@@ -4459,7 +4519,7 @@ function renderBorrow(){
           <strong>${escapeHtml(itemName(r.itemId))}</strong> × ${r.qty}
           <span class="tag ${tagData.cls}">${info.dir ? info.dir+' ' : ''}${tagData.label}</span>
         </div>
-        <div class="meta">${escapeHtml(memberName(r.memberId))} ${r.note? '· '+escapeHtml(r.note):''} · ${r.date}</div>
+        <div class="meta">${escapeHtml(memberName(r.memberId))} ${(r.price>0) ? '· 💰 '+r.price.toLocaleString('th-TH')+' บาท' : ''} ${r.note? '· '+escapeHtml(r.note):''} · ${r.date}</div>
       </div>
       <div style="display:flex;gap:8px;">
         ${(r.type==='borrow' && !r.returned) ? `<button class="ghost" onclick="markReturned('${r.id}')">✓ คืนแล้ว</button>` : ''}
@@ -4476,6 +4536,8 @@ async function addBorrow(){
   const qty = parseInt(document.getElementById('brQty').value) || 1;
   const memberId = document.getElementById('brName').value;
   const note = document.getElementById('brNote').value.trim();
+  const isPriceType = (type === 'buy' || type === 'buyIn');
+  const price = isPriceType ? (parseFloat(document.getElementById('brPrice').value) || 0) : null;
   if(!itemId){ alert('เลือกของที่จะเบิก/ยืม'); return; }
   if(!memberId){ alert('เลือกชื่อผู้เบิก/ยืม'); return; }
   const it = inventory.find(x=>x.id===itemId);
@@ -4488,15 +4550,24 @@ async function addBorrow(){
     if(qty > it.qty){ alert(`ของในคลังมีไม่พอ (คงเหลือ ${it.qty})`); return; }
     it.qty -= qty;
   }
-  borrowRecords.push({ id: uid(), type, itemId, qty, memberId, note, returned:false, date: nowStr(), ts: Date.now() });
+  borrowRecords.push({ id: uid(), type, itemId, qty, memberId, note, price, returned:false, date: nowStr(), ts: Date.now() });
   document.getElementById('brQty').value='1';
   document.getElementById('brNote').value='';
+  document.getElementById('brPrice').value='';
   renderItems();
   renderBorrow();
   await saveKey(KEYS.items, inventory);
   await saveKey(KEYS.borrow, borrowRecords);
   const BR_LOG_LABEL = { borrow:'ยืมของ', withdraw:'เบิกของ', buy:'ซื้อของ', buyIn:'รับซื้อของ' };
-  await logAction(`${BR_LOG_LABEL[type]||'เบิกของ'}: ${it.name} x${qty} (โดย ${memberName(memberId)})`);
+  const priceTxt = isPriceType && price > 0 ? ` ราคา ${price.toLocaleString('th-TH')} บาท` : '';
+  await logAction(`${BR_LOG_LABEL[type]||'เบิกของ'}: ${it.name} x${qty} (โดย ${memberName(memberId)})${priceTxt}`);
+}
+function toggleBrPriceField(){
+  const type = document.getElementById('brType').value;
+  const field = document.getElementById('brPriceField');
+  if(!field) return;
+  field.style.display = (type === 'buy' || type === 'buyIn') ? '' : 'none';
+  if(field.style.display === 'none') document.getElementById('brPrice').value = '';
 }
 async function markReturned(id){
   const rec = borrowRecords.find(r=>r.id===id);
