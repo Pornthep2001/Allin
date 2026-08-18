@@ -600,6 +600,21 @@
   .popup-box .popup-close:hover{border-color:var(--gold);color:var(--gold-soft);}
   .popup-box .popup-foot{margin-top:18px;text-align:right;}
 
+  /* ---- Sell-drug NPC spawn alert popup ---- */
+  #sellDrugAlertPopup{
+    position:fixed;inset:0;z-index:1100;display:none;
+    align-items:center;justify-content:center;padding:20px;
+    background:rgba(0,0,0,0.65);backdrop-filter:blur(2px);
+  }
+  #sellDrugAlertPopup.show{display:flex;}
+  #sellDrugAlertPopup .popup-box{border-color:#e8b26a;box-shadow:0 20px 50px rgba(232,178,106,0.25);}
+  .sell-drug-next{
+    background:rgba(212,175,55,0.08);border:1px solid rgba(212,175,55,0.3);border-radius:14px;
+    padding:16px 18px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+  }
+  .sell-drug-next .label{font-size:12px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:0.5px;}
+  .sell-drug-next .countdown{font-family:'Playfair Display',serif;font-size:26px;color:var(--gold-soft);font-weight:700;}
+
   /* ---- Dig points: ปูน / น้ำมัน / ลิค ---- */
   .dig-type-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
   .dig-type-opt{
@@ -690,6 +705,18 @@
     <div id="annPopupList"></div>
     <div class="popup-foot">
       <button class="ghost" onclick="closeAnnPopup()">รับทราบ</button>
+    </div>
+  </div>
+</div>
+
+<div id="sellDrugAlertPopup">
+  <div class="popup-box">
+    <div class="popup-head">
+      <h2>💊 NPC ขายยาใกล้เกิดแล้ว</h2>
+    </div>
+    <div id="sellDrugAlertText" style="font-size:14px;line-height:1.7;"></div>
+    <div class="popup-foot">
+      <button class="primary" onclick="ackSellDrugAlert()">รับทราบ</button>
     </div>
   </div>
 </div>
@@ -1188,7 +1215,9 @@
         </div>
       </div>
       <div style="font-size:12px;color:var(--ink-dim);margin-top:6px;line-height:1.6;">
-        * NPC ขายยาจะคูลดาวน์ทุก 25 นาที ระบบจะคำนวณรอบเกิดถัดไปให้อัตโนมัติ โดยจะแสดงรอบจนถึงเวลาที่ประเทศรีเซ็ต (06:00 หรือ 18:00) เท่านั้น — ถ้ากรอกเวลาก่อน 18:00 จะแสดงถึงแค่ 18:00 ถ้ากรอกเวลาหลัง 18:00 จะแสดงถึงแค่ 06:00 ของวันถัดไป กดปุ่ม "ขายแล้ว" เพื่อตัดรอบที่ขายไปแล้วออกจากตาราง<br>
+        * NPC ขายยาจะคูลดาวน์ทุก 25 นาที กรอกเวลาที่เกิดครั้งแรกเพียงครั้งเดียว ระบบจะคำนวณรอบถัดไปให้อัตโนมัติตลอด ไม่ต้องมานั่งกรอกเองทุกรอบ — จะแสดงเฉพาะรอบที่ยังไม่ถึงเวลาเท่านั้น (รอบที่เลยเวลาไปแล้วจะหายไปเองอัตโนมัติ) จนถึงเวลาที่ประเทศรีเซ็ต (06:00 หรือ 18:00)<br>
+        * ก่อนถึงเวลารอบถัดไป 3 นาที ระบบจะแจ้งเตือนเป็นป๊อปอัพให้อัตโนมัติ กดปุ่ม "รับทราบ" เพื่อปิดแจ้งเตือน<br>
+        * กดปุ่ม "ขายแล้ว" เพื่อลบรอบนั้นออกจากรายการทันที<br>
         * กรอกเวลาแบบ 24 ชั่วโมง (ไม่มี AM/PM) จะใส่วินาทีด้วยก็ได้ (เช่น 12:00:15) ถ้าไม่รู้วินาทีที่แน่นอนไม่ต้องใส่ก็ได้ — <b>หมายเหตุ: วินาทีของแต่ละคนอาจไม่ตรงกันเป๊ะ ๆ เล็กน้อย</b> เวลาที่คำนวณได้จึงเป็นแค่ตัวช่วยประมาณรอบเกิด ไม่ใช่เวลาที่แม่นยำ 100%
       </div>
       <div id="sellDrugScheduleWrap" style="margin-top:16px;"></div>
@@ -1299,6 +1328,19 @@
           <div class="amount" id="balanceAmount">0<span>บาท / IC</span></div>
         </div>
       </div>
+    </div>
+
+    <div class="card">
+      <h2>ยอดคงเหลือแยกตามสมาชิก <span class="eyebrow">Who Holds What</span></h2>
+      <div class="form-grid">
+        <div class="field">
+          <label>เลือกสมาชิก</label>
+          <select id="fundMemberFilter" onchange="renderFundMemberBreakdown()">
+            <option value="">— แสดงทั้งหมด —</option>
+          </select>
+        </div>
+      </div>
+      <div id="fundMemberBreakdown" style="margin-top:14px;"></div>
     </div>
 
     <div class="card admin-only">
@@ -2327,6 +2369,7 @@ async function loadAll(){
   renderSellDrugSchedule();
   renderDigPoints();
   startDigTimerLoop();
+  startSellDrugTimerLoop();
   setupRealtimeSync();
 }
 
@@ -2472,6 +2515,13 @@ function renderMemberSelects(){
     el.innerHTML = opts;
     if(!el.multiple && [...el.options].some(o=>o.value===current)) el.value = current;
   });
+  const fundFilterEl = document.getElementById('fundMemberFilter');
+  if(fundFilterEl){
+    const current = fundFilterEl.value;
+    fundFilterEl.innerHTML = '<option value="">— แสดงทั้งหมด —</option>' +
+      members.map(m=>`<option value="${m.id}">${escapeHtml(m.name)} (${escapeHtml(m.role)})</option>`).join('');
+    if([...fundFilterEl.options].some(o=>o.value===current)) fundFilterEl.value = current;
+  }
   const noMembers = members.length === 0;
   document.getElementById('fundMemberHint').style.display = noMembers ? 'block' : 'none';
 }
@@ -2747,6 +2797,7 @@ function memberName(id){ const m = members.find(x=>x.id===id); return m ? m.name
 function renderFund(){
   const balance = fundEntries.reduce((sum,e)=> sum + (e.type==='in'? e.amount : -e.amount), 0);
   document.getElementById('balanceAmount').innerHTML = fmt(balance) + '<span>บาท / IC</span>';
+  renderFundMemberBreakdown();
   const list = document.getElementById('fundList');
   if(fundEntries.length===0){
     list.innerHTML = '<div class="empty"><span class="icon">🪙</span>ยังไม่มีรายการ ลองบันทึกรายการแรกดูสิ</div>';
@@ -2763,6 +2814,53 @@ function renderFund(){
         <div class="amt ${e.type==='in'?'plus':'minus'}">${e.type==='in'?'+':'-'}${fmt(e.amount)}</div>
         <button class="ghost admin-only" onclick="event.stopPropagation(); deleteFund('${e.id}')">ลบ</button>
       </div>
+    </div>
+  `).join('');
+}
+
+// คำนวณยอดสุทธิ (รับเข้า - จ่ายออก) แยกตามสมาชิกแต่ละคน จากรายการกองทุนทั้งหมด
+function fundBalanceByMember(){
+  const byMember = {};
+  fundEntries.forEach(e=>{
+    if(!e.memberId) return;
+    const delta = e.type==='in' ? e.amount : -e.amount;
+    byMember[e.memberId] = (byMember[e.memberId] || 0) + delta;
+  });
+  return byMember;
+}
+
+function renderFundMemberBreakdown(){
+  const wrap = document.getElementById('fundMemberBreakdown');
+  if(!wrap) return;
+  const filterEl = document.getElementById('fundMemberFilter');
+  const selectedId = filterEl ? filterEl.value : '';
+  const byMember = fundBalanceByMember();
+
+  if(selectedId){
+    const amt = byMember[selectedId] || 0;
+    wrap.innerHTML = `
+      <div class="row-item">
+        <div><strong>${escapeHtml(memberName(selectedId))}</strong></div>
+        <div class="amt ${amt>=0?'plus':'minus'}">${fmt(amt)} บาท / IC</div>
+      </div>
+    `;
+    return;
+  }
+
+  const rows = members
+    .map(m=> ({ id: m.id, name: m.name, amt: byMember[m.id] || 0 }))
+    .filter(r=> r.amt !== 0)
+    .sort((a,b)=> b.amt - a.amt);
+
+  if(rows.length===0){
+    wrap.innerHTML = '<div class="empty"><span class="icon">🪙</span>ยังไม่มีข้อมูลยอดเงินแยกตามสมาชิก</div>';
+    return;
+  }
+
+  wrap.innerHTML = rows.map(r=>`
+    <div class="row-item">
+      <div><strong>${escapeHtml(r.name)}</strong></div>
+      <div class="amt ${r.amt>=0?'plus':'minus'}">${fmt(r.amt)} บาท / IC</div>
     </div>
   `).join('');
 }
@@ -3091,11 +3189,15 @@ async function deleteWork(type,id){
   await logAction(`ลบงานดำ (${type}): ${w ? w.title : id}`);
 }
 
-// ---------- WORK: ขายยา — ตารางคำนวณรอบเกิด NPC ----------
+// ---------- WORK: ขายยา — ตารางคำนวณรอบเกิด NPC (อัตโนมัติ, ไม่ต้องคอยกรอกเอง) ----------
 // NPC ขายยาจะคูลดาวน์ทุก 25 นาที และ "ประเทศรีเซ็ต" (server reset) วันละ 2 รอบ คือ 06:00 กับ 18:00
-// ดังนั้นตารางรอบเกิดจะคำนวณจากเวลาที่กรอก ไปเรื่อย ๆ ทีละ 25 นาที จนถึงเวลารีเซ็ตที่ใกล้ที่สุดถัดไปเท่านั้น
+// กรอกเวลาที่เกิดครั้งแรกเพียงครั้งเดียว จากนั้นระบบคำนวณและติดตามรอบถัดไปให้อัตโนมัติทั้งหมด
 // เวลาเป็นแบบ 24 ชั่วโมงเสมอ (ไม่มี AM/PM) และรองรับการกรอกวินาทีแบบไม่บังคับ (HH:MM หรือ HH:MM:SS)
 let sellDrugTimerState = { spawnTime: '', hasSeconds: false, sold: [] };
+let sellDrugTimerInterval = null;
+let sellDrugAlertedRounds = new Set(); // เก็บรอบ (วินาที) ที่แจ้งเตือนป๊อปอัพไปแล้ว ไม่ต้องแจ้งซ้ำ
+let sellDrugAlertQueue = []; // คิวของรอบที่รอแสดงป๊อปอัพ (กันแสดงซ้อนกันหลายอัน)
+let sellDrugAlertShowing = false;
 
 // แปลงข้อความเวลาที่ผู้ใช้กรอก -> จำนวนวินาทีทั้งหมด (0-86399) หรือ null ถ้ารูปแบบไม่ถูกต้อง
 // รองรับ "HH:MM" และ "HH:MM:SS" เท่านั้น (ไม่รับ AM/PM)
@@ -3140,6 +3242,16 @@ function computeSellDrugSchedule(startSeconds){
   }
   return { list, cap };
 }
+// คำนวณ "ตอนนี้" เทียบมาตราส่วนเดียวกับตาราง (วินาทีนับจากเที่ยงคืนของวันที่เริ่มกรอก)
+// ถ้าเวลาปัจจุบันข้ามเที่ยงคืนไปแล้วเทียบกับเวลาที่เริ่มกรอก จะบวก 86400 ให้ตรงกับรายการที่ +1 วัน
+function sellDrugNowAsScheduleSeconds(spawnBaseSeconds){
+  const now = new Date();
+  let nowSec = now.getHours()*3600 + now.getMinutes()*60 + now.getSeconds();
+  if(nowSec + 12*3600 < spawnBaseSeconds){
+    nowSec += 86400;
+  }
+  return nowSec;
+}
 
 function calcSellDrugSchedule(){
   const el = document.getElementById('sellDrugSpawnTime');
@@ -3147,18 +3259,21 @@ function calcSellDrugSchedule(){
   const parsed = sellDrugParseInput(raw);
   if(!parsed){ alert('กรุณากรอกเวลาให้ถูกรูปแบบ 24 ชม. เช่น 12:00 หรือ 12:00:30 (ไม่ใส่วินาทีก็ได้)'); return; }
   sellDrugTimerState = { spawnTime: parsed.totalSeconds, hasSeconds: parsed.hasSeconds, sold: [] };
+  sellDrugAlertedRounds = new Set();
   renderSellDrugSchedule();
   saveKey(KEYS.sellDrugTimer, sellDrugTimerState);
 }
 
 function clearSellDrugSchedule(){
   sellDrugTimerState = { spawnTime: '', hasSeconds: false, sold: [] };
+  sellDrugAlertedRounds = new Set();
   const el = document.getElementById('sellDrugSpawnTime');
   if(el) el.value = '';
   renderSellDrugSchedule();
   saveKey(KEYS.sellDrugTimer, sellDrugTimerState);
 }
 
+// กดขายแล้ว -> ลบรอบนั้นออกจากรายการทันที (ไม่ใช่แค่จางลง)
 function markSellDrugSold(secVal){
   if(!sellDrugTimerState.sold.includes(secVal)){
     sellDrugTimerState.sold.push(secVal);
@@ -3166,10 +3281,16 @@ function markSellDrugSold(secVal){
     saveKey(KEYS.sellDrugTimer, sellDrugTimerState);
   }
 }
-function unmarkSellDrugSold(secVal){
-  sellDrugTimerState.sold = sellDrugTimerState.sold.filter(v=>v!==secVal);
-  renderSellDrugSchedule();
-  saveKey(KEYS.sellDrugTimer, sellDrugTimerState);
+
+// คืนค่าเฉพาะรอบที่ยัง "ไม่ขาย" และ "ยังไม่เลยเวลา" เท่านั้น (รอบที่เลยเวลาไปแล้วจะหายไปเองอัตโนมัติ)
+function sellDrugGetUpcoming(){
+  const hasStart = sellDrugTimerState.spawnTime !== '' && sellDrugTimerState.spawnTime !== null && sellDrugTimerState.spawnTime !== undefined;
+  if(!hasStart) return null;
+  const { list, cap } = computeSellDrugSchedule(sellDrugTimerState.spawnTime);
+  const sold = sellDrugTimerState.sold || [];
+  const nowSec = sellDrugNowAsScheduleSeconds(sellDrugTimerState.spawnTime);
+  const upcoming = list.filter(t => !sold.includes(t) && t >= nowSec);
+  return { list, cap, sold, upcoming, nowSec };
 }
 
 function renderSellDrugSchedule(){
@@ -3185,30 +3306,48 @@ function renderSellDrugSchedule(){
     return;
   }
   const showSeconds = !!sellDrugTimerState.hasSeconds;
-  const { list, cap } = computeSellDrugSchedule(sellDrugTimerState.spawnTime);
-  const sold = sellDrugTimerState.sold || [];
-  const remaining = list.filter(t=>!sold.includes(t));
+  const data = sellDrugGetUpcoming();
+  const { list, cap, upcoming, nowSec } = data;
   const capLabel = sellDrugSecondsToTimeStr(cap, false) + (cap>=86400 ? ' (วันถัดไป)' : '');
-  const rows = list.map((t,i)=>{
-    const isSold = sold.includes(t);
+
+  if(upcoming.length === 0){
+    wrap.innerHTML = `
+      <div style="margin-bottom:10px;font-size:13px;color:var(--ink-dim);">
+        เริ่มเกิด <b style="color:var(--gold-soft);">${sellDrugSecondsToTimeStr(sellDrugTimerState.spawnTime, showSeconds)}</b>
+        · คูลดาวน์ทุก 25 นาที · แสดงรอบถึง <b style="color:var(--gold-soft);">${capLabel}</b> (ก่อนประเทศรีเซ็ต)
+      </div>
+      <div class="empty"><span class="icon">✅</span>ไม่มีรอบที่เหลืออยู่ในช่วงนี้แล้ว — กรอกเวลาที่ NPC เกิดครั้งแรกใหม่เมื่อประเทศรีเซ็ตรอบถัดไป</div>
+    `;
+    return;
+  }
+
+  const nextRound = upcoming[0];
+  const secsToNext = Math.max(0, nextRound - nowSec);
+  const mm = String(Math.floor(secsToNext/60)).padStart(2,'0');
+  const ss = String(secsToNext%60).padStart(2,'0');
+
+  const rows = upcoming.map((t,i)=>{
     const timeLabel = sellDrugSecondsToTimeStr(t, showSeconds) + (t>=86400 ? ' (+1 วัน)' : '');
     return `
-      <tr style="border-bottom:1px solid rgba(255,255,255,0.05);${isSold?'opacity:0.4;':''}">
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.05);${i===0?'background:rgba(212,175,55,0.06);':''}">
         <td style="padding:8px 10px;color:var(--ink-dim);">${i+1}</td>
-        <td style="padding:8px 10px;font-weight:700;color:var(--gold-soft);${isSold?'text-decoration:line-through;':''}">${timeLabel}</td>
+        <td style="padding:8px 10px;font-weight:700;color:var(--gold-soft);">${timeLabel}</td>
         <td style="padding:8px 10px;text-align:right;">
-          ${isSold
-            ? `<button class="ghost" onclick="unmarkSellDrugSold(${t})">ยกเลิก</button>`
-            : `<button class="primary" onclick="markSellDrugSold(${t})">ขายแล้ว</button>`}
+          <button class="primary" onclick="markSellDrugSold(${t})">ขายแล้ว</button>
         </td>
       </tr>`;
   }).join('');
+
   wrap.innerHTML = `
-    <div style="margin-bottom:10px;font-size:13px;color:var(--ink-dim);">
-      เริ่มเกิด <b style="color:var(--gold-soft);">${sellDrugSecondsToTimeStr(sellDrugTimerState.spawnTime, showSeconds)}</b>
-      · คูลดาวน์ทุก 25 นาที · แสดงรอบถึง <b style="color:var(--gold-soft);">${capLabel}</b> (ก่อนประเทศรีเซ็ต)
-      · เหลือ <b style="color:#7fd6a4;">${remaining.length}</b> จาก ${list.length} รอบ
-      ${!showSeconds ? '<br><span style="font-size:11px;">(ไม่ได้ระบุวินาที ระบบตั้งวินาทีเป็น 00 ให้อัตโนมัติ — เวลาจริงของแต่ละคนอาจคลาดเคลื่อนไปเล็กน้อย)</span>' : ''}
+    <div class="sell-drug-next">
+      <div>
+        <div class="label">รอบถัดไปในอีก</div>
+        <div class="countdown">${mm}:${ss}</div>
+      </div>
+      <div style="text-align:right;font-size:12.5px;color:var(--ink-dim);">
+        เวลาที่จะเกิด <b style="color:var(--gold-soft);">${sellDrugSecondsToTimeStr(nextRound, showSeconds)}</b><br>
+        เหลือ <b style="color:#7fd6a4;">${upcoming.length}</b> จาก ${list.length} รอบ (ถึง ${capLabel})
+      </div>
     </div>
     <div style="overflow:auto;">
       <table style="width:100%;border-collapse:collapse;">
@@ -3222,7 +3361,48 @@ function renderSellDrugSchedule(){
         <tbody>${rows}</tbody>
       </table>
     </div>
+    ${!showSeconds ? '<div style="font-size:11px;color:var(--ink-dim);margin-top:8px;">(ไม่ได้ระบุวินาที ระบบตั้งวินาทีเป็น 00 ให้อัตโนมัติ — เวลาจริงของแต่ละคนอาจคลาดเคลื่อนไปเล็กน้อย)</div>' : ''}
   `;
+}
+
+// ทำงานทุกวินาที: อัปเดตนับถอยหลัง, ตัดรอบที่เลยเวลาออกอัตโนมัติ, และแจ้งเตือนก่อนถึงเวลา 3 นาที
+function tickSellDrugTimer(){
+  const hasStart = sellDrugTimerState.spawnTime !== '' && sellDrugTimerState.spawnTime !== null && sellDrugTimerState.spawnTime !== undefined;
+  if(!hasStart) return;
+  const data = sellDrugGetUpcoming();
+  if(!data) return;
+  const { upcoming, nowSec } = data;
+  renderSellDrugSchedule();
+  if(upcoming.length === 0) return;
+  const nextRound = upcoming[0];
+  const secsToNext = nextRound - nowSec;
+  if(secsToNext <= 180 && secsToNext > 0 && !sellDrugAlertedRounds.has(nextRound)){
+    sellDrugAlertedRounds.add(nextRound);
+    sellDrugAlertQueue.push(nextRound);
+    showNextSellDrugAlert();
+  }
+}
+
+function showNextSellDrugAlert(){
+  if(sellDrugAlertShowing) return;
+  if(sellDrugAlertQueue.length === 0) return;
+  const roundSec = sellDrugAlertQueue.shift();
+  const showSeconds = !!sellDrugTimerState.hasSeconds;
+  const timeLabel = sellDrugSecondsToTimeStr(roundSec, showSeconds) + (roundSec>=86400 ? ' (+1 วัน)' : '');
+  document.getElementById('sellDrugAlertText').innerHTML =
+    `อีกไม่ถึง 3 นาที NPC ขายยาจะเกิดรอบถัดไป (เวลา <b style="color:var(--gold-soft);">${timeLabel}</b>) เตรียมตัวไปขายยาได้เลย!`;
+  document.getElementById('sellDrugAlertPopup').classList.add('show');
+  sellDrugAlertShowing = true;
+}
+function ackSellDrugAlert(){
+  document.getElementById('sellDrugAlertPopup').classList.remove('show');
+  sellDrugAlertShowing = false;
+  showNextSellDrugAlert(); // ถ้ามีคิวค้างอยู่ (ไม่ค่อยเกิดขึ้น) แสดงอันถัดไปต่อ
+}
+
+function startSellDrugTimerLoop(){
+  if(sellDrugTimerInterval) return;
+  sellDrugTimerInterval = setInterval(tickSellDrugTimer, 1000);
 }
 
 // ---------- POINTS ----------
